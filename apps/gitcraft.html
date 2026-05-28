@@ -1,0 +1,2983 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GitCraft AI Workspace</title>
+  <style>
+    /* ==========================================================
+       1. VARIABLES & BASE THEME
+       ========================================================== */
+    :root {
+      --bg-main: #0b0f19;
+      --bg-sidebar: #111625;
+      --bg-panel: #161c30;
+      --bg-input: #1f2740;
+      --bg-hover: #263152;
+      --border-color: rgba(255, 255, 255, 0.08);
+      --border-active: rgba(56, 189, 248, 0.4);
+      --accent: #38bdf8;
+      --accent-hover: #0ea5e9;
+      --accent-glow: rgba(56, 189, 248, 0.15);
+      --success: #10b981;
+      --success-glow: rgba(16, 185, 129, 0.15);
+      --warning: #f59e0b;
+      --error: #ef4444;
+      --text-primary: #f3f4f6;
+      --text-secondary: #9ca3af;
+      --text-muted: #6b7280;
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      --font-mono: 'Fira Code', ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, monospace;
+      --shadow-main: 0 10px 30px 0 rgba(0, 0, 0, 0.5);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-main);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      height: 100vh;
+      width: 100vw;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Scrollbar Styling */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    /* ==========================================================
+       2. HEADER STYLE
+       ========================================================== */
+    header {
+      height: 60px;
+      background: var(--bg-sidebar);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      z-index: 10;
+      flex-shrink: 0;
+    }
+
+    .logo-container {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo-dot {
+      width: 10px;
+      height: 10px;
+      background: var(--accent);
+      border-radius: 50%;
+      box-shadow: 0 0 10px var(--accent);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.7); }
+      70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(56, 189, 248, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(56, 189, 248, 0); }
+    }
+
+    .logo-title {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      background: linear-gradient(135deg, #ffffff 0%, #a5f3fc 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .header-meta {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .badge {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-color);
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--font-mono);
+    }
+
+    .badge-active {
+      border-color: var(--success);
+      color: var(--success);
+      background: var(--success-glow);
+    }
+
+    .badge-expired {
+      border-color: var(--error);
+      color: var(--error);
+      background: rgba(239, 68, 68, 0.1);
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--text-muted);
+    }
+
+    .badge-active .status-dot {
+      background: var(--success);
+    }
+
+    .badge-expired .status-dot {
+      background: var(--error);
+    }
+
+    /* Buttons */
+    .btn-icon {
+      background: transparent;
+      border: 1px solid var(--border-color);
+      color: var(--text-secondary);
+      cursor: pointer;
+      padding: 8px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+
+    .btn-icon:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+      border-color: var(--text-secondary);
+    }
+
+    /* ==========================================================
+       3. MAIN LAYOUT
+       ========================================================== */
+    .app-container {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Left Sidebar */
+    .sidebar {
+      width: 320px;
+      min-width: 300px;
+      max-width: 400px;
+      background: var(--bg-sidebar);
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .sidebar-section {
+      padding: 16px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .sidebar-section.scrollable {
+      flex: 1;
+      overflow-y: auto;
+      border-bottom: none;
+    }
+
+    .section-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    /* Controls & Dropdown */
+    .repo-controls {
+      display: flex;
+      gap: 8px;
+    }
+
+    .select-dropdown {
+      flex: 1;
+      background: var(--bg-panel);
+      border: 1px solid var(--border-color);
+      color: var(--text-primary);
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-family: var(--font-sans);
+      outline: none;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+
+    .select-dropdown:focus {
+      border-color: var(--accent);
+    }
+
+    /* Sync Button Spin Animation */
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    .syncing-spin {
+      animation: spin 1s infinite linear;
+    }
+
+    /* Search filter */
+    .search-box {
+      margin-top: 4px;
+    }
+
+    /* Explorer Tree View */
+    .tree-container {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .tree-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      height: 28px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      border-radius: 6px;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .tree-item:hover {
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text-primary);
+    }
+
+    .tree-checkbox {
+      width: 14px;
+      height: 14px;
+      accent-color: var(--accent);
+      cursor: pointer;
+      margin-left: 4px;
+    }
+
+    .folder-toggle {
+      display: inline-block;
+      width: 14px;
+      font-size: 9px;
+      text-align: center;
+      color: var(--text-muted);
+      cursor: pointer;
+    }
+
+    .tree-name {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      flex: 1;
+    }
+
+    .file-item .tree-name {
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+
+    /* Context tags section */
+    .context-list {
+      max-height: 150px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .context-tag {
+      background: rgba(56, 189, 248, 0.08);
+      border: 1px solid rgba(56, 189, 248, 0.2);
+      color: var(--accent);
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-family: var(--font-mono);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      animation: slideIn 0.2s ease;
+    }
+
+    .context-tag-close {
+      cursor: pointer;
+      font-size: 12px;
+      opacity: 0.6;
+      transition: opacity 0.15s;
+    }
+
+    .context-tag-close:hover {
+      opacity: 1;
+    }
+
+    /* ==========================================================
+       4. CENTER PANEL (AI CHAT)
+       ========================================================== */
+    .center-panel {
+      flex: 1;
+      background: var(--bg-main);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .chat-history {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    /* Messages layout */
+    .message {
+      display: flex;
+      gap: 16px;
+      max-width: 85%;
+      animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .message-user {
+      align-self: flex-end;
+      flex-direction: row-reverse;
+    }
+
+    .message-assistant {
+      align-self: flex-start;
+    }
+
+    .avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--bg-panel);
+      border: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 16px;
+    }
+
+    .message-user .avatar {
+      background: var(--accent-glow);
+      border-color: var(--accent);
+    }
+
+    .message-content {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      flex: 1;
+    }
+
+    .message-bubble {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-color);
+      padding: 14px 18px;
+      border-radius: 16px;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .message-user .message-bubble {
+      background: var(--bg-input);
+      border-color: rgba(255, 255, 255, 0.12);
+      border-bottom-right-radius: 4px;
+    }
+
+    .message-assistant .message-bubble {
+      border-bottom-left-radius: 4px;
+    }
+
+    /* Simple Markdown Styles inside Bubbles */
+    .message-bubble p {
+      margin-bottom: 12px;
+    }
+    .message-bubble p:last-child {
+      margin-bottom: 0;
+    }
+    .message-bubble code {
+      background: rgba(0, 0, 0, 0.3);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: #79c0ff;
+    }
+    .message-bubble pre {
+      background: rgba(4, 6, 11, 0.8);
+      padding: 14px;
+      border-radius: 10px;
+      overflow-x: auto;
+      margin: 12px 0;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .message-bubble pre code {
+      background: transparent;
+      padding: 0;
+      font-size: 12px;
+      color: var(--text-primary);
+    }
+    .message-bubble ul, .message-bubble ol {
+      margin-left: 20px;
+      margin-bottom: 12px;
+    }
+    .message-bubble li {
+      margin-bottom: 6px;
+    }
+
+    /* AI Typing Indicator */
+    .typing-indicator {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 12px 18px;
+      background: var(--bg-panel);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      border-bottom-left-radius: 4px;
+      width: fit-content;
+      animation: slideIn 0.2s ease;
+    }
+
+    .typing-dot {
+      width: 6px;
+      height: 6px;
+      background: var(--text-secondary);
+      border-radius: 50%;
+      animation: typing 1.4s infinite ease-in-out both;
+    }
+
+    .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+    .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+
+    @keyframes typing {
+      0%, 80%, 100% { transform: scale(0.3); opacity: 0.5; }
+      40% { transform: scale(1.0); opacity: 1; }
+    }
+
+    /* ==========================================================
+       5. OPERATION CARD (AI ACTION PROMPT)
+       ========================================================== */
+    .op-card {
+      background: rgba(16, 185, 129, 0.04);
+      border: 1px solid rgba(16, 185, 129, 0.2);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-top: 10px;
+      box-shadow: var(--shadow-main);
+      animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      max-width: 650px;
+    }
+
+    .op-card.executed {
+      background: rgba(255, 255, 255, 0.02);
+      border-color: var(--border-color);
+    }
+
+    .op-card-header {
+      background: rgba(16, 185, 129, 0.08);
+      padding: 12px 16px;
+      border-bottom: 1px solid rgba(16, 185, 129, 0.15);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .op-card.executed .op-card-header {
+      background: rgba(255, 255, 255, 0.02);
+      border-bottom-color: var(--border-color);
+    }
+
+    .op-card-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--success);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .op-card.executed .op-card-title {
+      color: var(--text-secondary);
+    }
+
+    .op-card-badge {
+      background: rgba(16, 185, 129, 0.2);
+      color: var(--success);
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .op-card.executed .op-card-badge {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text-secondary);
+    }
+
+    .op-card-body {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .op-item {
+      display: flex;
+      flex-direction: column;
+      background: rgba(4, 6, 11, 0.5);
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.03);
+      padding: 10px 14px;
+    }
+
+    .op-item-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .op-item-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .op-item-icon {
+      width: 20px;
+      height: 20px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 800;
+      flex-shrink: 0;
+    }
+
+    .op-icon-create { background: rgba(16, 185, 129, 0.15); color: var(--success); }
+    .op-icon-edit { background: rgba(245, 158, 11, 0.15); color: var(--warning); }
+    .op-icon-delete { background: rgba(239, 68, 68, 0.15); color: var(--error); }
+    .op-icon-branch { background: rgba(56, 189, 248, 0.15); color: var(--accent); }
+
+    .op-item-path {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-primary);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 320px;
+    }
+
+    .op-item-view-btn {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-color);
+      color: var(--text-secondary);
+      font-size: 11px;
+      padding: 4px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .op-item-view-btn:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text-primary);
+    }
+
+    .code-preview-outer {
+      margin-top: 10px;
+      background: #04060b;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 8px;
+      max-height: 250px;
+      overflow-y: auto;
+      display: none;
+    }
+
+    .code-preview-outer.open {
+      display: block;
+    }
+
+    .code-preview-container {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      line-height: 1.6;
+      padding: 12px;
+      white-space: pre;
+    }
+
+    .code-line {
+      display: flex;
+    }
+
+    .line-number {
+      width: 32px;
+      color: var(--text-muted);
+      text-align: right;
+      padding-right: 12px;
+      user-select: none;
+      border-right: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .line-text {
+      padding-left: 12px;
+      color: #c9d1d9;
+    }
+
+    .op-commit-box {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--border-color);
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .op-card-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      margin-top: 8px;
+    }
+
+    .btn-execute {
+      background: var(--success);
+      color: #ffffff;
+      font-weight: 600;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-execute:hover {
+      background: #059669;
+      transform: translateY(-1px);
+    }
+
+    .btn-execute:disabled {
+      background: var(--text-muted);
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-cancel {
+      background: transparent;
+      border: 1px solid var(--border-color);
+      color: var(--text-secondary);
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-cancel:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    .btn-cancel:disabled {
+      cursor: not-allowed;
+      opacity: 0.5;
+    }
+
+    /* ==========================================================
+       6. CHAT INPUT SECTION
+       ========================================================== */
+    .chat-input-container {
+      padding: 20px;
+      background: var(--bg-sidebar);
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+
+    .input-box-wrapper {
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 10px 14px;
+      display: flex;
+      flex-direction: column;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .input-box-wrapper:focus-within {
+      border-color: var(--accent);
+      box-shadow: 0 0 12px var(--accent-glow);
+    }
+
+    .chat-textarea {
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      font-size: 14px;
+      resize: none;
+      min-height: 48px;
+      max-height: 150px;
+      width: 100%;
+      line-height: 1.5;
+    }
+
+    .input-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 8px;
+      border-top: 1px solid rgba(255, 255, 255, 0.04);
+      padding-top: 8px;
+    }
+
+    .input-actions-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .input-actions-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .shortcut-tips {
+      display: flex;
+      gap: 12px;
+      font-size: 11px;
+      color: var(--text-muted);
+      justify-content: center;
+    }
+
+    .kbd {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--text-secondary);
+    }
+
+    /* ==========================================================
+       7. HIDDEN TERMINAL PANEL
+       ========================================================== */
+    .terminal-panel {
+      height: 220px;
+      background: #04060b;
+      border-top: 1px solid var(--border-color);
+      display: none;
+      flex-direction: column;
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    .terminal-panel.open {
+      display: flex;
+    }
+
+    .terminal-header {
+      height: 38px;
+      background: rgba(255, 255, 255, 0.02);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      font-family: var(--font-sans);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .terminal-controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .terminal-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 11px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: color 0.15s;
+    }
+
+    .terminal-btn:hover {
+      color: var(--text-primary);
+    }
+
+    .terminal-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px 16px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      line-height: 1.6;
+    }
+
+    .log-line {
+      margin-bottom: 6px;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    .log-time { color: var(--text-muted); }
+    .log-type { font-weight: bold; margin-right: 4px; }
+    .log-info .log-type { color: var(--accent); }
+    .log-success .log-type { color: var(--success); }
+    .log-warning .log-type { color: var(--warning); }
+    .log-error .log-type { color: var(--error); }
+    .log-debug .log-type { color: #a78bfa; }
+
+    .log-info .log-text { color: var(--text-primary); }
+    .log-success .log-text { color: #d1fae5; }
+    .log-warning .log-text { color: #fef3c7; }
+    .log-error .log-text { color: #fee2e2; }
+    .log-debug .log-text { color: #f3e8ff; }
+
+    /* ==========================================================
+       8. MODAL SETTINGS OVERLAY
+       ========================================================== */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(4, 6, 11, 0.85);
+      backdrop-filter: blur(8px);
+      z-index: 100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .modal-overlay.open {
+      display: flex;
+      opacity: 1;
+    }
+
+    .modal-card {
+      width: 540px;
+      max-width: 90%;
+      max-height: 85vh;
+      background: var(--bg-panel);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      animation: modalSlide 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes modalSlide {
+      from { transform: translateY(20px); }
+      to { transform: translateY(0); }
+    }
+
+    .modal-header {
+      padding: 18px 24px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .modal-title {
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .modal-body {
+      padding: 24px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    .form-input {
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      color: var(--text-primary);
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-family: var(--font-sans);
+      outline: none;
+      transition: all 0.2s;
+    }
+
+    .form-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 8px var(--accent-glow);
+    }
+
+    .form-input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .form-help {
+      font-size: 11px;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    /* Model suggestion tags */
+    .model-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .model-pill {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-color);
+      color: var(--text-secondary);
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-family: var(--font-mono);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .model-pill:hover {
+      background: var(--bg-hover);
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .modal-footer {
+      padding: 16px 24px;
+      background: rgba(0, 0, 0, 0.2);
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+    }
+
+    /* ==========================================================
+       9. TOAST NOTIFICATION
+       ========================================================== */
+    .toast-container {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 1000;
+    }
+
+    .toast {
+      background: var(--bg-panel);
+      border-left: 4px solid var(--accent);
+      border-top: 1px solid var(--border-color);
+      border-right: 1px solid var(--border-color);
+      border-bottom: 1px solid var(--border-color);
+      padding: 12px 18px;
+      border-radius: 6px;
+      box-shadow: var(--shadow-main);
+      color: var(--text-primary);
+      font-size: 13px;
+      min-width: 300px;
+      max-width: 400px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      animation: toastIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    @keyframes toastIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+
+    .toast.toast-error { border-left-color: var(--error); }
+    .toast.toast-success { border-left-color: var(--success); }
+    .toast.toast-warning { border-left-color: var(--warning); }
+
+    .toast-close {
+      cursor: pointer;
+      color: var(--text-muted);
+      font-size: 16px;
+      line-height: 1;
+    }
+
+    .toast-close:hover {
+      color: var(--text-primary);
+    }
+
+    /* ==========================================================
+       10. UTILITY CLASSES & EMPTY STATES
+       ========================================================== */
+    .hidden { display: none !important; }
+    .text-success { color: var(--success); }
+    .text-error { color: var(--error); }
+    .text-warning { color: var(--warning); }
+    .text-accent { color: var(--accent); }
+
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: var(--text-muted);
+      gap: 12px;
+      padding: 40px;
+      text-align: center;
+    }
+
+    .empty-state-icon {
+      font-size: 36px;
+      opacity: 0.4;
+    }
+
+    .loading-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(11, 15, 25, 0.7);
+      backdrop-filter: blur(4px);
+      z-index: 5;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+    }
+
+    .spinner {
+      width: 32px;
+      height: 32px;
+      border: 3px solid rgba(255, 255, 255, 0.1);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s infinite linear;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ==========================================================
+       TOP NAVIGATION BAR
+       ========================================================== -->
+  <header>
+    <div class="logo-container">
+      <div class="logo-dot"></div>
+      <div class="logo-title">GitCraft AI Workspace</div>
+    </div>
+
+    <div class="header-meta">
+      <!-- Active Repository Badge -->
+      <div id="repo-badge" class="badge">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"></path><path d="M9 18c-4.51 2-5-2-7-2"></path></svg>
+        <span id="repo-name-text">Belum Terhubung</span>
+      </div>
+
+      <!-- Sync Status Badge -->
+      <div id="sync-status-badge" class="badge text-warning">
+        <span class="status-dot"></span>
+        <span id="sync-status-text">Butuh Sinkronisasi</span>
+      </div>
+
+      <!-- Credential Expiration Countdown -->
+      <div id="expiry-indicator" class="badge badge-expired hidden">
+        <span class="status-dot"></span>
+        <span>Token Kedaluwarsa</span>
+      </div>
+
+      <!-- Settings Trigger Button -->
+      <button class="btn-icon" id="settings-trigger-btn" title="Pengaturan (Ctrl + ,)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- ==========================================================
+       MAIN APP CONTAINER (3-PANELS)
+       ========================================================== */ -->
+  <div class="app-container">
+
+    <!-- ==========================================================
+         PANEL 1: LEFT SIDEBAR (EXPLORER & CONTEXT)
+         ========================================================== -->
+    <aside class="sidebar">
+      <!-- Section 1.1: Branch Selector & Sync -->
+      <div class="sidebar-section">
+        <div class="section-title">
+          <span>Repositori & Branch</span>
+        </div>
+        <div class="repo-controls">
+          <select id="branch-select" class="select-dropdown">
+            <option value="">Pilih Branch...</option>
+          </select>
+          <button id="sync-repo-btn" class="btn-primary" title="Sinkronisasi Ulang Struktur Repositori">
+            <svg id="sync-icon-svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Section 1.2: Repository Tree Explorer -->
+      <div class="sidebar-section scrollable">
+        <div class="section-title" style="margin-bottom: 8px;">
+          <span>Struktur Repositori</span>
+        </div>
+        <div class="search-box">
+          <input type="text" id="file-search-input" placeholder="Cari & saring berkas..." class="form-input" style="font-size: 11px; padding: 6px 10px; width: 100%;">
+        </div>
+        <div id="tree-container" class="tree-container" style="margin-top: 10px;">
+          <div class="empty-state">
+            <div class="empty-state-icon">📂</div>
+            <div style="font-size: 12px;">Masukkan Kredensial & Hubungkan Repositori Anda.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 1.3: Context Selector (AI Context Files) -->
+      <div class="sidebar-section">
+        <div class="section-title" style="margin-bottom: 8px;">
+          <span>Konteks AI Aktif</span>
+        </div>
+        <div id="selected-context-list" class="context-list">
+          <span style="color: var(--text-muted); font-size: 11px;">Tidak ada file konteks terpilih</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ==========================================================
+         PANEL 2: CENTER PANEL (AI CHAT MAIN CONVERSATION)
+         ========================================================== -->
+    <main class="center-panel">
+      <!-- Loading overlay for chat action states -->
+      <div id="chat-loading-overlay" class="loading-overlay hidden">
+        <div class="spinner"></div>
+        <div style="font-size: 13px; color: var(--text-primary); font-weight: 500;" id="loading-overlay-text">Menghubungkan...</div>
+      </div>
+
+      <!-- Chat Messages Scroll Area -->
+      <div id="chat-history" class="chat-history">
+        <!-- Default Empty State or Initial Guide -->
+        <div class="empty-state" id="chat-empty-state">
+          <div style="font-size: 42px;">✨</div>
+          <div style="font-size: 16px; font-weight: 700; margin-top: 8px;">GitCraft AI Workspace</div>
+          <p style="font-size: 13px; color: var(--text-secondary); max-width: 420px; line-height: 1.5; margin-top: 4px;">
+            Sistem asisten GitHub berbasis kecerdasan buatan. Ketik instruksi dalam bahasa sehari-hari untuk mengelola, membuat, memodifikasi, atau menghapus file secara cerdas pada repositori Anda.
+          </p>
+          <button id="guide-setup-btn" class="btn-primary" style="margin-top: 12px; font-size: 12px; padding: 6px 14px;">
+            Konfigurasi Kredensial
+          </button>
+        </div>
+      </div>
+
+      <!-- Typing Indicator -->
+      <div id="typing-container" class="hidden" style="padding: 0 24px 12px;">
+        <div class="typing-indicator">
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+          <span style="font-size: 11px; color: var(--text-muted); margin-left: 6px; font-family: var(--font-mono)">AI sedang menganalisis repositori...</span>
+        </div>
+      </div>
+
+      <!-- Dynamic Chat Input Box -->
+      <div class="chat-input-container">
+        <!-- Shortcut Indicator or Status -->
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span id="floating-context-count" class="text-accent" style="font-size: 11px; font-family: var(--font-mono);">Tidak ada konteks terpilih</span>
+          <span id="active-model-badge" style="font-size: 11px; font-family: var(--font-mono); color: var(--text-muted);">Model: -</span>
+        </div>
+
+        <div class="input-box-wrapper">
+          <textarea id="chat-textarea" class="chat-textarea" placeholder="Tanyakan sesuatu atau perintahkan AI: 'Tambahkan berkas config.js berisi boilerplate express server'..." tabindex="1"></textarea>
+          
+          <div class="input-actions">
+            <!-- Left: Toggle Terminal Switcher -->
+            <div class="input-actions-left">
+              <button id="terminal-toggle-btn" class="terminal-btn" style="padding: 4px 8px; border: 1px solid var(--border-color); border-radius: 6px;" title="Buka Output Terminal (Ctrl + `)">
+                <span style="display: inline-block; width: 8px; height: 8px; background: #a78bfa; border-radius: 50%; box-shadow: 0 0 6px #a78bfa;"></span>
+                <span style="font-size: 11px; font-weight: bold; color: var(--text-secondary);">TERMINAL</span>
+              </button>
+            </div>
+
+            <!-- Right: Send button -->
+            <div class="input-actions-right">
+              <button id="clear-chat-btn" class="btn-icon" style="padding: 6px;" title="Bersihkan Percakapan">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+              </button>
+              <button id="send-chat-btn" class="btn-primary" style="padding: 6px 14px;" title="Kirim Pesan (Ctrl + Enter)">
+                <span>Kirim</span>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Shortcuts Quick Legend -->
+        <div class="shortcut-tips">
+          <span>Shortcuts: <kbd class="kbd">Ctrl</kbd>+<kbd class="kbd">Enter</kbd> Kirim &bull; <kbd class="kbd">Ctrl</kbd>+<kbd class="kbd">`</kbd> Terminal &bull; <kbd class="kbd">Ctrl</kbd>+<kbd class="kbd">,</kbd> Pengaturan</span>
+        </div>
+      </div>
+
+      <!-- ==========================================================
+           PANEL 3: HIDDEN TERMINAL PANEL (SLIDABLE AT BOTTOM)
+           ========================================================== -->
+      <div id="terminal-panel" class="terminal-panel">
+        <div class="terminal-header">
+          <span>Output Konsol & Log Debug Git API</span>
+          <div class="terminal-controls">
+            <button id="terminal-clear-btn" class="terminal-btn" title="Bersihkan Output">
+              <span>Hapus Log</span>
+            </button>
+            <button id="terminal-close-btn" class="terminal-btn" style="font-size: 14px; font-weight: bold; margin-left: 4px;" title="Tutup Terminal">
+              <span>&times;</span>
+            </button>
+          </div>
+        </div>
+        <div id="terminal-content" class="terminal-content">
+          <div class="log-line log-info"><span class="log-time">[00:00:00]</span> <span class="log-type">[SYSTEM]</span> <span class="log-text">Sistem Konsol GitCraft Terbuka. Menunggu aktivitas...</span></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ==========================================================
+       MODAL SETUP / CONFIGURATION DIALOG
+       ========================================================== -->
+  <div id="settings-modal" class="modal-overlay">
+    <form id="settings-form" class="modal-card">
+      <div class="modal-header">
+        <span class="modal-title">Konfigurasi GitCraft AI Workspace</span>
+        <span id="settings-close-btn" style="cursor: pointer; font-size: 20px; color: var(--text-muted); transition: color 0.15s;">&times;</span>
+      </div>
+
+      <div class="modal-body">
+        <!-- Section: GitHub Token & Repo Info -->
+        <div style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--accent); letter-spacing: 0.5px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); padding-bottom: 4px; margin-bottom: 4px;">Integrasi GitHub</div>
+        
+        <div class="form-group">
+          <label class="form-label" for="setting-gh-token">GitHub Personal Access Token (Classic / Fine-grained)</label>
+          <input type="password" id="setting-gh-token" class="form-input" placeholder="ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxx" required>
+          <span class="form-help">Token memerlukan hak akses scope <code>repo</code> agar asisten dapat membaca berkas serta melakukan commit & push perubahan.</span>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="setting-gh-repo">Repository GitHub (format: username/repo-name)</label>
+          <input type="text" id="setting-gh-repo" class="form-input" placeholder="contoh: sandhika-galih/belajar-javascript" required>
+        </div>
+
+        <!-- Section: AI Provider & API Keys -->
+        <div style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--accent); letter-spacing: 0.5px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); padding-bottom: 4px; margin-bottom: 4px; margin-top: 10px;">Pengaturan Model AI</div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="setting-ai-provider">AI Provider</label>
+            <select id="setting-ai-provider" class="select-dropdown" style="padding: 10px 14px;">
+              <option value="gemini">Google Gemini AI</option>
+              <option value="groq">Groq Cloud AI</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="setting-ai-model">AI Model Name</label>
+            <input type="text" id="setting-ai-model" class="form-input" placeholder="pilih atau ketik model" required>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-top: -6px;">
+          <span class="form-label" style="font-size: 11px;">Rekomendasi model (Klik untuk mengisi langsung):</span>
+          <div id="model-suggestions-gemini" class="model-pills">
+            <span class="model-pill" data-model="gemini-1.5-flash">gemini-1.5-flash</span>
+            <span class="model-pill" data-model="gemini-1.5-pro">gemini-1.5-pro</span>
+          </div>
+          <div id="model-suggestions-groq" class="model-pills hidden">
+            <span class="model-pill" data-model="llama-3.1-70b-versatile">llama-3.1-70b</span>
+            <span class="model-pill" data-model="llama3-8b-8192">llama3-8b</span>
+            <span class="model-pill" data-model="mixtral-8x7b-32768">mixtral-8x7b</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="setting-ai-key">AI API Key</label>
+          <input type="password" id="setting-ai-key" class="form-input" placeholder="Masukkan kunci API dari provider terpilih" required>
+          <span class="form-help">Semua kunci disimpan secara terenkripsi murni secara lokal di dalam <code>localStorage</code> peramban Anda dan akan otomatis kedaluwarsa setelah 7 hari demi keamanan privasi.</span>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" id="settings-cancel-btn" class="btn-secondary">Batal</button>
+        <button type="submit" class="btn-primary" style="background: var(--accent); color: #000;">Hubungkan & Sinkronkan</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- ==========================================================
+       TOAST POPUP CONTAINER
+       ========================================================== -->
+  <div id="toast-container" class="toast-container"></div>
+
+
+  <!-- ==========================================================
+       VANILLA JAVASCRIPT LOGICS & ARCHITECTURE
+       ========================================================== -->
+  <script>
+    // ==========================================
+    // A. APP STATE & GLOBAL CONSTANTS
+    // ==========================================
+    const State = {
+      credentials: {
+        githubToken: '',
+        githubRepo: '',
+        aiProvider: 'gemini',
+        aiModel: 'gemini-1.5-flash',
+        aiApiKey: '',
+        savedAt: null
+      },
+      repo: {
+        branch: 'main',
+        branches: [],
+        tree: [], // flat representation of files: { path, sha, type, size }
+        selectedFiles: new Set(), // path list selected as AI context
+        isSyncing: false
+      },
+      chat: {
+        history: [], // { role: 'user'|'assistant', text, operations: [] or null, suggestedCommitMessage: '', timestamp, approved, executed }
+        isGenerating: false
+      },
+      execution: {
+        logs: [],
+        pendingOperations: null,
+        isExecuting: false
+      },
+      ui: {
+        terminalOpen: false,
+        settingsOpen: false,
+        expandedFolders: new Set() // keeps folder open state persistent across draws
+      }
+    };
+
+    // Instruction prompt for the AI to behave as structured Git assistant
+    const SYSTEM_PROMPT = `
+Anda adalah AI-native GitHub Workspace Assistant yang cerdas, efisien, dan presisi.
+Anda bertugas membantu pengguna mengelola repositori GitHub mereka dengan menerjemahkan instruksi bahasa alami menjadi serangkaian operasi terstruktur (Internal Commands).
+
+Struktur Repositori Saat Ini (Active Branch: \${branch}):
+\${treeStructure}
+
+File Berisi Konten yang Dipilih Pengguna (Context Files):
+\${selectedFilesContext}
+
+KONTROL OUTPUT:
+Anda WAJIB memberikan respon dalam format JSON murni. JANGAN menyisipkan teks pengantar atau penutup apapun di luar format JSON. JANGAN menyisipkan markdown block selain di dalam string penjelasan.
+Format JSON harus memiliki struktur persis seperti ini:
+{
+  "explanation": "Penjelasan singkat dalam bahasa Indonesia mengenai tindakan yang akan diambil, apa perubahan yang akan dilakukan, dan mengapa.",
+  "operations": [
+    {
+      "op": "create_file" | "edit_file" | "delete_file" | "create_branch",
+      "path": "path/relative/to/repo/file.txt",
+      "content": "Isi file lengkap (untuk create_file atau edit_file). Harus berisi seluruh kode lengkap dari file, jangan gunakan placeholder atau ringkasan.",
+      "branch": "nama-branch" (Opsional, jika ingin membuat branch baru atau menargetkan branch tertentu)
+    }
+  ],
+  "suggestedCommitMessage": "feat(scope): deskripsi commit singkat menggunakan standard conventional commit"
+}
+
+ATURAN UTAMA:
+1. Jika pengguna meminta membuat file baru, gunakan "op": "create_file" dengan isi lengkap di bidang "content".
+2. Jika pengguna meminta mengedit file, gunakan "op": "edit_file" dengan isi lengkap yang telah diperbarui di bidang "content" (jangan gunakan placeholder seperti "// kode lainnya...").
+3. Jika pengguna meminta menghapus file, gunakan "op": "delete_file" dengan "path" file tersebut.
+4. Jika pengguna meminta membuat cabang/branch baru, gunakan "op": "create_branch" dengan bidang "branch" berisi nama branch baru.
+5. Jika pengguna hanya bertanya atau tidak meminta modifikasi repositori, Anda dapat mengosongkan array "operations" (yaitu "operations": []) dan berikan jawaban ramah di bidang "explanation".
+6. JANGAN PERNAH menyertakan berkas biner besar. Hanya dukung berkas berbasis teks (JS, HTML, CSS, JSON, Python, Markdown, TXT).
+7. Semua penjelasan harus bersahabat, profesional, terstruktur, dan disajikan dalam Bahasa Indonesia yang baik dan benar.
+`;
+
+    // ==========================================
+    // B. INITIALIZATION & AUTO-EXPIRY CHECKS
+    // ==========================================
+    window.addEventListener('DOMContentLoaded', () => {
+      initApp();
+      setupEventListeners();
+    });
+
+    function initApp() {
+      // Clean start terminal log
+      logTerminal('Menginisialisasi aplikasi GitCraft AI Workspace...', 'info');
+
+      // 1. Storage check & Expiration
+      const saved = localStorage.getItem('gitcraft_credentials');
+      if (saved) {
+        try {
+          const creds = JSON.parse(saved);
+          const savedAt = creds.savedAt || 0;
+          const expiryPeriodMs = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
+          
+          if (Date.now() - savedAt > expiryPeriodMs) {
+            logTerminal('Sesi kredensial Anda yang disimpan (lebih dari 7 hari) telah kedaluwarsa demi alasan keamanan.', 'warning');
+            localStorage.removeItem('gitcraft_credentials');
+            showToast('Sesi penyimpanan token kedaluwarsa setelah 7 hari. Silakan masukkan kredensial kembali.', 'warning');
+            openSettingsModal();
+          } else {
+            State.credentials = creds;
+            logTerminal('Kredensial valid berhasil dimuat dari penyimpanan lokal.', 'success');
+            showToast('Kredensial berhasil dimuat.', 'success');
+            
+            // Sync Repository instantly
+            syncRepository();
+          }
+        } catch (e) {
+          logTerminal('Kesalahan saat membaca kredensial terarsip. Menghapus data...', 'error');
+          localStorage.removeItem('gitcraft_credentials');
+          openSettingsModal();
+        }
+      } else {
+        logTerminal('Tidak ditemukan kredensial GitHub/AI yang terkonfigurasi.', 'warning');
+        openSettingsModal();
+      }
+
+      // 2. Local Chat History Check
+      const savedChat = localStorage.getItem('gitcraft_chat_history');
+      if (savedChat) {
+        try {
+          State.chat.history = JSON.parse(savedChat);
+          renderChatHistory();
+        } catch (e) {
+          localStorage.removeItem('gitcraft_chat_history');
+        }
+      }
+
+      // Initialize UI statuses
+      updateHeaderMeta();
+      updateExpiryIndicator();
+    }
+
+    // ==========================================
+    // C. STORAGE & CREDENTIALS CONTROLLER
+    // ==========================================
+    function saveCredentials(creds) {
+      const payload = {
+        ...creds,
+        savedAt: Date.now()
+      };
+      localStorage.setItem('gitcraft_credentials', JSON.stringify(payload));
+      State.credentials = payload;
+      updateHeaderMeta();
+      updateExpiryIndicator();
+      logTerminal('Kredensial baru disimpan ke localStorage peramban.', 'success');
+    }
+
+    function updateExpiryIndicator() {
+      const indicator = document.getElementById('expiry-indicator');
+      if (!indicator) return;
+
+      const saved = localStorage.getItem('gitcraft_credentials');
+      if (saved) {
+        try {
+          const creds = JSON.parse(saved);
+          const savedAt = creds.savedAt || 0;
+          const expiryMs = 7 * 24 * 60 * 60 * 1000;
+          const msLeft = (savedAt + expiryMs) - Date.now();
+          
+          if (msLeft > 0) {
+            const daysLeft = (msLeft / (1000 * 60 * 60 * 24)).toFixed(1);
+            indicator.querySelector('span:last-child').textContent = `Token valid: ${daysLeft} hari lagi`;
+            indicator.className = 'badge badge-active';
+            return;
+          }
+        } catch (e) {}
+      }
+      
+      indicator.className = 'badge badge-expired';
+      indicator.querySelector('span:last-child').textContent = 'Kredensial belum diatur';
+    }
+
+    function saveChatToLocalStorage() {
+      localStorage.setItem('gitcraft_chat_history', JSON.stringify(State.chat.history));
+    }
+
+    // ==========================================
+    // D. GITHUB REST API WRAPPER
+    // ==========================================
+    const GitHubAPI = {
+      async fetchBranches() {
+        const token = State.credentials.githubToken;
+        const repo = State.credentials.githubRepo;
+        if (!token || !repo) throw new Error("Akses Token atau Repositori GitHub belum terkonfigurasi.");
+
+        logTerminal(`[Git API] Mengambil daftar cabang untuk ${repo}...`, 'info');
+        
+        const res = await fetch(`https://api.github.com/repos/${repo}/branches`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/vnd.github.v3+json'
+          }
+        });
+
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.message || `Gagal memuat cabang: Status ${res.status}`);
+        }
+
+        const data = await res.json();
+        logTerminal(`[Git API] Berhasil memuat ${data.length} cabang.`, 'success');
+        return data;
+      },
+
+      async fetchTree(branch) {
+        const token = State.credentials.githubToken;
+        const repo = State.credentials.githubRepo;
+        if (!token || !repo) throw new Error("Akses Token atau Repositori GitHub belum terkonfigurasi.");
+
+        logTerminal(`[Git API] Mengambil pohon struktur file untuk branch "${branch}" secara rekursif...`, 'info');
+        
+        const res = await fetch(`https://api.github.com/repos/${repo}/git/trees/${branch}?recursive=1`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/vnd.github.v3+json'
+          }
+        });
+
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.message || `Gagal memuat struktur file: Status ${res.status}`);
+        }
+
+        const data = await res.json();
+        logTerminal(`[Git API] Berhasil mengambil struktur pohon. Total ${data.tree.length} elemen ditemukan.`, 'success');
+        return data.tree; // Array flat elements: path, sha, type, size
+      },
+
+      async createBranch(newBranch, baseBranch = 'main') {
+        const token = State.credentials.githubToken;
+        const repo = State.credentials.githubRepo;
+        if (!token || !repo) throw new Error("Akses Token atau Repositori GitHub belum terkonfigurasi.");
+
+        logTerminal(`[Git API] Membuat cabang baru "${newBranch}" dari basis "${baseBranch}"...`, 'info');
+
+        // 1. Get base branch latest commit SHA
+        const baseRes = await fetch(`https://api.github.com/repos/${repo}/git/ref/heads/${baseBranch}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/vnd.github.v3+json'
+          }
+        });
+        if (!baseRes.ok) throw new Error(`Gagal mengambil ref cabang basis "${baseBranch}": Status ${baseRes.status}`);
+        const baseData = await baseRes.json();
+        const baseSha = baseData.object.sha;
+
+        // 2. Post new reference
+        const res = await fetch(`https://api.github.com/repos/${repo}/git/refs`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/vnd.github.v3+json',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            ref: `refs/heads/${newBranch}`,
+            sha: baseSha
+          })
+        });
+
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.message || `Gagal membuat cabang baru: Status ${res.status}`);
+        }
+
+        const data = await res.json();
+        logTerminal(`[Git API] Cabang "${newBranch}" berhasil dibuat!`, 'success');
+        return data;
+      },
+
+      async writeFile(path, content, commitMessage, targetBranch) {
+        const token = State.credentials.githubToken;
+        const repo = State.credentials.githubRepo;
+        const branch = targetBranch || State.repo.branch;
+        if (!token || !repo) throw new Error("Akses Token atau Repositori GitHub belum terkonfigurasi.");
+
+        logTerminal(`[Git API] Menulis berkas "${path}" ke dalam branch "${branch}"...`, 'info');
+
+        // Check if file exists in our local tree representation to retrieve SHA
+        const existingFile = State.repo.tree.find(item => item.path === path);
+        const sha = existingFile ? existingFile.sha : null;
+
+        if (sha) {
+          logTerminal(`[Git API] Berkas terdeteksi sudah ada (SHA: ${sha}). Melakukan operasi update.`, 'debug');
+        } else {
+          logTerminal(`[Git API] Berkas baru terdeteksi. Melakukan operasi create.`, 'debug');
+        }
+
+        // Safe Base64 encoder for Unicode strings in browsers
+        const base64Content = btoa(unescape(encodeURIComponent(content)));
+
+        const payload = {
+          message: commitMessage || `Update file: ${path} via GitCraft`,
+          content: base64Content,
+          branch: branch
+        };
+        if (sha) payload.sha = sha;
+
+        const res = await fetch(`https://api.github.com/repos/${repo}/contents/${path}`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/vnd.github.v3+json',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.message || `Gagal menulis berkas "${path}": Status ${res.status}`);
+        }
+
+        const data = await res.json();
+        logTerminal(`[Git API] Berkas "${path}" berhasil ditulis! Commit: ${data.commit.sha.substring(0, 7)}`, 'success');
+        return data;
+      },
+
+      async deleteFile(path, commitMessage, targetBranch) {
+        const token = State.credentials.githubToken;
+        const repo = State.credentials.githubRepo;
+        const branch = targetBranch || State.repo.branch;
+        if (!token || !repo) throw new Error("Akses Token atau Repositori GitHub belum terkonfigurasi.");
+
+        logTerminal(`[Git API] Menghapus berkas "${path}" dari branch "${branch}"...`, 'warning');
+
+        const existingFile = State.repo.tree.find(item => item.path === path);
+        if (!existingFile) throw new Error(`Berkas "${path}" tidak dapat ditemukan di pohon repositori aktif.`);
+        
+        const sha = existingFile.sha;
+        logTerminal(`[Git API] Menghapus berkas berbasis SHA: ${sha}`, 'debug');
+
+        const res = await fetch(`https://api.github.com/repos/${repo}/contents/${path}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/vnd.github.v3+json',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            message: commitMessage || `Delete file: ${path} via GitCraft`,
+            sha: sha,
+            branch: branch
+          })
+        });
+
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.message || `Gagal menghapus berkas "${path}": Status ${res.status}`);
+        }
+
+        const data = await res.json();
+        logTerminal(`[Git API] Berkas "${path}" berhasil dihapus dari repositori.`, 'success');
+        return data;
+      }
+    };
+
+    // ==========================================
+    // E. AI INTERACTION & PROMPT GENERATION
+    // ==========================================
+    async function generateAIResponse(provider, model, prompt, systemPrompt) {
+      const apiKey = State.credentials.aiApiKey;
+      if (!apiKey) throw new Error("API Key kecerdasan buatan belum terkonfigurasi.");
+
+      logTerminal(`[AI Service] Mengirim permintaan ke AI Provider: ${provider.toUpperCase()} (${model})...`, 'info');
+
+      if (provider === 'gemini') {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+        
+        const payload = {
+          contents: [
+            {
+              role: 'user',
+              parts: [{ text: `${systemPrompt}\n\nPermintaan Pengguna:\n${prompt}` }]
+            }
+          ],
+          generationConfig: {
+            responseMimeType: "application/json"
+          }
+        };
+
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) {
+          const errText = await res.text();
+          throw new Error(`Google Gemini API Error (${res.status}): ${errText}`);
+        }
+
+        const data = await res.json();
+        try {
+          return data.candidates[0].content.parts[0].text;
+        } catch (e) {
+          throw new Error(`Gagal memparsing isi data Gemini: ${JSON.stringify(data)}`);
+        }
+
+      } else if (provider === 'groq') {
+        const url = `https://api.groq.com/openai/v1/chat/completions`;
+        
+        const payload = {
+          model: model,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: prompt }
+          ],
+          response_format: { type: "json_object" },
+          temperature: 0.15
+        };
+
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) {
+          const errText = await res.text();
+          throw new Error(`Groq API Error (${res.status}): ${errText}`);
+        }
+
+        const data = await res.json();
+        try {
+          return data.choices[0].message.content;
+        } catch (e) {
+          throw new Error(`Gagal memparsing isi data Groq: ${JSON.stringify(data)}`);
+        }
+      } else {
+        throw new Error(`AI Provider "${provider}" tidak didukung oleh sistem.`);
+      }
+    }
+
+    // ==========================================
+    // F. CHAT WORKSPACE & CONTEXT MANAGER
+    // ==========================================
+    async function getSelectedFilesContext() {
+      const selected = State.repo.selectedFiles;
+      if (selected.size === 0) return '';
+
+      const token = State.credentials.githubToken;
+      const repo = State.credentials.githubRepo;
+      const branch = State.repo.branch;
+      if (!token || !repo) return '';
+
+      logTerminal(`[Context Manager] Mengunduh konten teks dari ${selected.size} berkas terpilih...`, 'info');
+      showToast('Memuat berkas konteks...', 'info');
+
+      const promises = Array.from(selected).map(async (path) => {
+        try {
+          const res = await fetch(`https://api.github.com/repos/${repo}/contents/${path}?ref=${branch}`, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Accept': 'application/vnd.github.v3.raw'
+            }
+          });
+          if (res.ok) {
+            const text = await res.text();
+            return `=== KONTEN BERKAS: ${path} ===\n${text}\n=============================`;
+          } else {
+            return `=== KONTEN BERKAS: ${path} ===\n(Gagal memuat konten dari GitHub: Status ${res.status})\n=============================`;
+          }
+        } catch (e) {
+          return `=== KONTEN BERKAS: ${path} ===\n(Error: ${e.message})\n=============================`;
+        }
+      });
+
+      const contents = await Promise.all(promises);
+      return contents.join('\n\n');
+    }
+
+    function parseAIResponse(rawText) {
+      let cleaned = rawText.trim();
+      // Remove possible markdown wraps
+      if (cleaned.startsWith('```json')) {
+        cleaned = cleaned.substring(7);
+      } else if (cleaned.startsWith('```')) {
+        cleaned = cleaned.substring(3);
+      }
+      if (cleaned.endsWith('```')) {
+        cleaned = cleaned.substring(0, cleaned.length - 3);
+      }
+      cleaned = cleaned.trim();
+      return JSON.parse(cleaned);
+    }
+
+    // Process user prompt query submission
+    async function submitChatPrompt() {
+      const textarea = document.getElementById('chat-textarea');
+      const text = textarea.value.trim();
+      if (!text) return;
+
+      if (State.chat.isGenerating) {
+        showToast('Tunggu AI menyelesaikan analisis saat ini.', 'warning');
+        return;
+      }
+
+      // Check for raw command short-circuits
+      if (text === '/eksekusi' || text === '/execute') {
+        executePendingOperations();
+        textarea.value = '';
+        return;
+      }
+      if (text === '/batal' || text === '/cancel') {
+        cancelPendingOperations();
+        textarea.value = '';
+        return;
+      }
+
+      State.chat.isGenerating = true;
+
+      // Append user bubble
+      State.chat.history.push({
+        role: 'user',
+        text: text,
+        timestamp: new Date()
+      });
+
+      textarea.value = '';
+      textarea.style.height = '48px'; // Reset height
+      
+      // Update historical layouts
+      renderChatHistory();
+      scrollToBottom();
+      showTypingIndicator(true);
+
+      try {
+        // Collect tree schema
+        const treeText = State.repo.tree.length > 0
+          ? State.repo.tree.map(f => `  ${f.type === 'tree' ? '[📁 Folder]' : '[📄 Berkas]'} ${f.path}`).join('\n')
+          : '(Repositori kosong atau belum disinkronisasi)';
+
+        // Collect context contents
+        const contextText = await getSelectedFilesContext();
+
+        // Assemble instruction prompts
+        const systemPrompt = SYSTEM_PROMPT
+          .replace('${branch}', State.repo.branch)
+          .replace('${treeStructure}', treeText)
+          .replace('${selectedFilesContext}', contextText || '(Tidak ada berkas terpilih)');
+
+        const responseText = await generateAIResponse(
+          State.credentials.aiProvider,
+          State.credentials.aiModel,
+          text,
+          systemPrompt
+        );
+
+        showTypingIndicator(false);
+        State.chat.isGenerating = false;
+
+        let parsed;
+        try {
+          parsed = parseAIResponse(responseText);
+        } catch (e) {
+          logTerminal(`[Error] Gagal memparsing respons JSON dari asisten AI. Konten mentah:\n${responseText}`, 'error');
+          throw new Error("Asisten AI memberikan format respons non-JSON. Silakan coba perintah lagi.");
+        }
+
+        // Push AI Response back to history
+        State.chat.history.push({
+          role: 'assistant',
+          text: parsed.explanation || '',
+          operations: parsed.operations || [],
+          suggestedCommitMessage: parsed.suggestedCommitMessage || 'Update via GitCraft AI Workspace',
+          timestamp: new Date(),
+          approved: false,
+          executed: false
+        });
+
+        if (parsed.operations && parsed.operations.length > 0) {
+          logTerminal(`[AI Service] AI menyarankan ${parsed.operations.length} operasi internal. Membutuhkan persetujuan pengguna.`, 'warning');
+          State.execution.pendingOperations = parsed.operations;
+        }
+
+        saveChatToLocalStorage();
+        renderChatHistory();
+        scrollToBottom();
+
+      } catch (err) {
+        showTypingIndicator(false);
+        State.chat.isGenerating = false;
+        logTerminal(`[Asisten Error] ${err.message}`, 'error');
+
+        State.chat.history.push({
+          role: 'assistant',
+          text: `⚠️ **Gagal memproses permintaan Anda.**\n\n*Penyebab:* ${err.message}\n\nPastikan konfigurasi API Key dan Token GitHub di pengaturan sudah valid dan Anda memiliki koneksi internet aktif.`,
+          timestamp: new Date()
+        });
+
+        renderChatHistory();
+        scrollToBottom();
+      }
+    }
+
+    // ==========================================
+    // G. REPOSITORI TREE EXPLORER & PARSER
+    // ==========================================
+    function buildTree(pathsList) {
+      const root = { name: 'root', type: 'folder', children: {}, path: '' };
+
+      pathsList.forEach(item => {
+        const parts = item.path.split('/');
+        let current = root;
+        let currentPath = '';
+
+        parts.forEach((part, index) => {
+          currentPath = currentPath ? `${currentPath}/${part}` : part;
+          const isLast = index === parts.length - 1;
+
+          if (!current.children[part]) {
+            current.children[part] = {
+              name: part,
+              path: currentPath,
+              type: isLast ? (item.type === 'tree' ? 'folder' : 'file') : 'folder',
+              sha: isLast ? item.sha : null,
+              size: isLast ? item.size : null,
+              children: {}
+            };
+          }
+          current = current.children[part];
+        });
+      });
+
+      return root;
+    }
+
+    function renderTree(node, container, depth = 0) {
+      const sortedKeys = Object.keys(node.children).sort((a, b) => {
+        const itemA = node.children[a];
+        const itemB = node.children[b];
+        if (itemA.type !== itemB.type) {
+          return itemA.type === 'folder' ? -1 : 1;
+        }
+        return itemA.name.localeCompare(itemB.name);
+      });
+
+      sortedKeys.forEach(key => {
+        const child = node.children[key];
+        const itemEl = document.createElement('div');
+        itemEl.className = `tree-item ${child.type}-item`;
+        itemEl.style.paddingLeft = `${depth * 12 + 6}px`;
+
+        const isSelected = State.repo.selectedFiles.has(child.path);
+        const checkboxHtml = child.type === 'file' ? `
+          <input type="checkbox" class="tree-checkbox" data-path="${child.path}" ${isSelected ? 'checked' : ''}>
+        ` : '';
+
+        const isExpanded = State.ui.expandedFolders.has(child.path);
+        const toggleIcon = child.type === 'folder' ? `
+          <span class="folder-toggle" data-path="${child.path}">${isExpanded ? '▼' : '▶'}</span>
+        ` : '📄';
+
+        itemEl.innerHTML = `
+          ${checkboxHtml}
+          ${toggleIcon}
+          <span class="tree-name" data-path="${child.path}">${child.name}</span>
+        `;
+
+        container.appendChild(itemEl);
+
+        if (child.type === 'folder') {
+          const childContainer = document.createElement('div');
+          childContainer.className = `tree-folder-children ${isExpanded ? '' : 'hidden'}`;
+          childContainer.id = `folder-children-${btoa(child.path).replace(/=/g, '')}`;
+          container.appendChild(childContainer);
+
+          const toggleEl = itemEl.querySelector('.folder-toggle');
+          const nameEl = itemEl.querySelector('.tree-name');
+
+          const toggleAction = () => {
+            const nowExpanded = toggleEl.textContent === '▶';
+            if (nowExpanded) {
+              toggleEl.textContent = '▼';
+              childContainer.classList.remove('hidden');
+              State.ui.expandedFolders.add(child.path);
+            } else {
+              toggleEl.textContent = '▶';
+              childContainer.classList.add('hidden');
+              State.ui.expandedFolders.delete(child.path);
+            }
+          };
+
+          toggleEl.addEventListener('click', toggleAction);
+          nameEl.addEventListener('click', toggleAction);
+
+          renderTree(child, childContainer, depth + 1);
+        } else {
+          const checkbox = itemEl.querySelector('.tree-checkbox');
+          checkbox.addEventListener('change', (e) => {
+            if (e.target.checked) {
+              State.repo.selectedFiles.add(child.path);
+            } else {
+              State.repo.selectedFiles.delete(child.path);
+            }
+            updateSelectedContextUI();
+          });
+        }
+      });
+    }
+
+    function renderTreeExplorer() {
+      const container = document.getElementById('tree-container');
+      if (!container) return;
+
+      container.innerHTML = '';
+      const query = document.getElementById('file-search-input').value.trim().toLowerCase();
+
+      if (State.repo.tree.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">📂</div>
+            <div style="font-size: 12px; color: var(--text-muted)">Repositori kosong atau belum disinkronisasi.</div>
+          </div>
+        `;
+        return;
+      }
+
+      if (query) {
+        // Flat filtered layout on search mode
+        const matches = State.repo.tree.filter(item => 
+          item.type === 'blob' && item.path.toLowerCase().includes(query)
+        );
+
+        if (matches.length === 0) {
+          container.innerHTML = `<div style="padding: 14px; font-size: 12px; color: var(--text-muted); text-align: center;">Tidak ada berkas yang cocok.</div>`;
+          return;
+        }
+
+        matches.forEach(item => {
+          const itemEl = document.createElement('div');
+          itemEl.className = 'tree-item file-item';
+          itemEl.style.paddingLeft = '8px';
+
+          const isSelected = State.repo.selectedFiles.has(item.path);
+
+          itemEl.innerHTML = `
+            <input type="checkbox" class="tree-checkbox" data-path="${item.path}" ${isSelected ? 'checked' : ''}>
+            📄 <span class="tree-name" data-path="${item.path}">${item.path}</span>
+          `;
+
+          itemEl.querySelector('.tree-checkbox').addEventListener('change', (e) => {
+            if (e.target.checked) {
+              State.repo.selectedFiles.add(item.path);
+            } else {
+              State.repo.selectedFiles.delete(item.path);
+            }
+            updateSelectedContextUI();
+          });
+
+          container.appendChild(itemEl);
+        });
+      } else {
+        const parsedTree = buildTree(State.repo.tree);
+        renderTree(parsedTree, container);
+      }
+    }
+
+    function updateSelectedContextUI() {
+      const container = document.getElementById('selected-context-list');
+      if (!container) return;
+
+      container.innerHTML = '';
+      const selected = State.repo.selectedFiles;
+
+      if (selected.size === 0) {
+        container.innerHTML = `<span style="color: var(--text-muted); font-size: 11px;">Tidak ada file konteks terpilih</span>`;
+        document.getElementById('floating-context-count').textContent = 'Tidak ada konteks terpilih';
+        return;
+      }
+
+      selected.forEach(path => {
+        const tag = document.createElement('div');
+        tag.className = 'context-tag';
+        tag.innerHTML = `
+          <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 200px;" title="${path}">${path}</span>
+          <span class="context-tag-close" data-path="${path}">&times;</span>
+        `;
+
+        tag.querySelector('.context-tag-close').addEventListener('click', () => {
+          State.repo.selectedFiles.delete(path);
+          updateSelectedContextUI();
+          renderTreeExplorer();
+        });
+
+        container.appendChild(tag);
+      });
+
+      document.getElementById('floating-context-count').textContent = `${selected.size} file terpilih sebagai konteks`;
+    }
+
+    // ==========================================
+    // H. OPERATION EXECUTION ENGINE & DIFFS
+    // ==========================================
+    async function executePendingOperations(msgIdx = null) {
+      let targetMsg = null;
+      let targetIdx = -1;
+
+      if (msgIdx !== null) {
+        targetMsg = State.chat.history[msgIdx];
+        targetIdx = msgIdx;
+      } else {
+        for (let i = State.chat.history.length - 1; i >= 0; i--) {
+          const msg = State.chat.history[i];
+          if (msg.role === 'assistant' && msg.operations && msg.operations.length > 0 && !msg.executed) {
+            targetMsg = msg;
+            targetIdx = i;
+            break;
+          }
+        }
+      }
+
+      if (!targetMsg || !targetMsg.operations || targetMsg.operations.length === 0) {
+        showToast('Tidak ada operasi tertunda untuk dijalankan.', 'warning');
+        return;
+      }
+
+      if (State.execution.isExecuting) {
+        showToast('Menunggu operasi sebelumnya selesai.', 'warning');
+        return;
+      }
+
+      State.execution.isExecuting = true;
+      logTerminal(`[Engine] Memulai eksekusi sekuensial ${targetMsg.operations.length} operasi...`, 'info');
+      showToast('Mengeksekusi operasi GitHub...', 'info');
+
+      // Update Card Action State
+      const opCardEl = document.getElementById(`op-card-${targetIdx}`);
+      if (opCardEl) {
+        const execBtn = opCardEl.querySelector('.btn-execute');
+        const cancelBtn = opCardEl.querySelector('.btn-cancel');
+        if (execBtn) {
+          execBtn.textContent = 'Mengeksekusi...';
+          execBtn.disabled = true;
+        }
+        if (cancelBtn) cancelBtn.disabled = true;
+      }
+
+      try {
+        for (let op of targetMsg.operations) {
+          const commitMsg = targetMsg.suggestedCommitMessage || 'Update via GitCraft AI Workspace';
+
+          if (op.op === 'create_branch') {
+            await GitHubAPI.createBranch(op.branch, State.repo.branch);
+            State.repo.branch = op.branch; // Auto-focus to new branch
+          } else if (op.op === 'create_file' || op.op === 'edit_file') {
+            await GitHubAPI.writeFile(op.path, op.content, commitMsg, op.branch);
+          } else if (op.op === 'delete_file') {
+            await GitHubAPI.deleteFile(op.path, commitMsg, op.branch);
+          } else {
+            throw new Error(`Operasi tidak dikenal: ${op.op}`);
+          }
+        }
+
+        // Execution success updates
+        targetMsg.executed = true;
+        targetMsg.approved = true;
+        State.execution.pendingOperations = null;
+
+        logTerminal(`[Engine] Seluruh operasi eksekusi berhasil diselesaikan.`, 'success');
+        showToast('Seluruh operasi berhasil dieksekusi!', 'success');
+
+        // Reload tree silently
+        await syncRepository(false);
+
+        // Save history and redrafts
+        saveChatToLocalStorage();
+        renderChatHistory();
+        renderTreeExplorer();
+
+      } catch (err) {
+        logTerminal(`[Engine Error] Gagal melakukan eksekusi: ${err.message}`, 'error');
+        showToast(`Gagal mengeksekusi: ${err.message}`, 'error');
+
+        // Rollback buttons state so user can retry
+        if (opCardEl) {
+          const execBtn = opCardEl.querySelector('.btn-execute');
+          const cancelBtn = opCardEl.querySelector('.btn-cancel');
+          if (execBtn) {
+            execBtn.textContent = 'Coba Lagi';
+            execBtn.disabled = false;
+          }
+          if (cancelBtn) cancelBtn.disabled = false;
+        }
+      } finally {
+        State.execution.isExecuting = false;
+      }
+    }
+
+    function cancelPendingOperations(msgIdx = null) {
+      let targetMsg = null;
+      let targetIdx = -1;
+
+      if (msgIdx !== null) {
+        targetMsg = State.chat.history[msgIdx];
+        targetIdx = msgIdx;
+      } else {
+        for (let i = State.chat.history.length - 1; i >= 0; i--) {
+          const msg = State.chat.history[i];
+          if (msg.role === 'assistant' && msg.operations && msg.operations.length > 0 && !msg.executed) {
+            targetMsg = msg;
+            targetIdx = i;
+            break;
+          }
+        }
+      }
+
+      if (!targetMsg) return;
+
+      targetMsg.executed = true;
+      targetMsg.approved = false;
+      State.execution.pendingOperations = null;
+
+      logTerminal('[Engine] Operasi dibatalkan secara manual oleh pengguna.', 'warning');
+      showToast('Rencana operasi dibatalkan.', 'warning');
+
+      saveChatToLocalStorage();
+      renderChatHistory();
+    }
+
+    // ==========================================
+    // I. UI VIEW RENDERERS & LOGGERS
+    // ==========================================
+    function logTerminal(message, type = 'info') {
+      const content = document.getElementById('terminal-content');
+      if (!content) return;
+
+      const timestamp = new Date().toLocaleTimeString();
+      const logLine = document.createElement('div');
+      logLine.className = `log-line log-${type}`;
+
+      let text = typeof message === 'object' ? JSON.stringify(message, null, 2) : message;
+
+      logLine.innerHTML = `
+        <span class="log-time">[${timestamp}]</span>
+        <span class="log-type">[${type.toUpperCase()}]</span>
+        <span class="log-text"></span>
+      `;
+      logLine.querySelector('.log-text').textContent = text;
+
+      content.appendChild(logLine);
+      content.scrollTop = content.scrollHeight;
+
+      State.execution.logs.push({ timestamp, type, text });
+    }
+
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      if (!container) return;
+
+      const toast = document.createElement('div');
+      toast.className = `toast toast-${type}`;
+
+      let emoji = 'ℹ️';
+      if (type === 'success') emoji = '✅';
+      if (type === 'warning') emoji = '⚠️';
+      if (type === 'error') emoji = '❌';
+
+      toast.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span>${emoji}</span>
+          <span style="font-size: 13px; line-height: 1.4;">${message}</span>
+        </div>
+        <span class="toast-close">&times;</span>
+      `;
+
+      container.appendChild(toast);
+
+      // Slide out & auto remove
+      const timeout = setTimeout(() => {
+        toast.style.animation = 'toastIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) reverse forwards';
+        setTimeout(() => { toast.remove(); }, 300);
+      }, 4500);
+
+      toast.querySelector('.toast-close').addEventListener('click', () => {
+        clearTimeout(timeout);
+        toast.remove();
+      });
+    }
+
+    function showTypingIndicator(show) {
+      const container = document.getElementById('typing-container');
+      if (show) {
+        container.classList.remove('hidden');
+      } else {
+        container.classList.add('hidden');
+      }
+    }
+
+    // Dynamic responsive text escaping
+    function escapeHtml(text) {
+      return text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    // Zero-dependency premium syntax highlighter
+    function highlightCode(code, lang) {
+      let esc = escapeHtml(code);
+      if (!lang) return esc;
+
+      const l = lang.toLowerCase();
+
+      if (l === 'js' || l === 'javascript' || l === 'json') {
+        esc = esc.replace(/\b(const|let|var|function|return|if|else|for|while|do|switch|case|break|continue|import|export|from|class|extends|new|this|async|await|try|catch|finally|throw|default|null|undefined|true|false)\b/g, '<span style="color: #ff7b72; font-weight: bold;">$1</span>');
+        esc = esc.replace(/(['"`])(.*?)\1/g, '<span style="color: #a5d6ff;">$1$2$1</span>');
+        esc = esc.replace(/\b(\d+)\b/g, '<span style="color: #79c0ff;">$1</span>');
+        esc = esc.replace(/(\/\/.*)/g, '<span style="color: #8b949e; font-style: italic;">$1</span>');
+        if (l === 'json') {
+          esc = esc.replace(/"([^"]+)":/g, '<span style="color: #7ee787; font-weight: bold;">"$1"</span>:');
+        }
+      } else if (l === 'html') {
+        esc = esc.replace(/(&lt;\/?[a-zA-Z0-9:-]+)/g, '<span style="color: #7ee787;">$1</span>');
+        esc = esc.replace(/(\s[a-zA-Z0-9:-]+=)(['"].*?['"])/g, '$1<span style="color: #a5d6ff;">$2</span>');
+        esc = esc.replace(/(&lt;!--[\s\S]*?--&gt;)/g, '<span style="color: #8b949e; font-style: italic;">$1</span>');
+      } else if (l === 'css') {
+        esc = esc.replace(/([a-zA-Z-]+)\s*:/g, '<span style="color: #7ee787;">$1</span>:');
+        esc = esc.replace(/:\s*([^;]+);/g, ': <span style="color: #a5d6ff;">$1</span>;');
+        esc = esc.replace(/(\/\*[\s\S]*?\*\/)/g, '<span style="color: #8b949e; font-style: italic;">$1</span>');
+      } else if (l === 'python' || l === 'py') {
+        esc = esc.replace(/\b(def|class|return|if|elif|else|for|while|break|continue|in|is|and|or|not|import|from|as|try|except|finally|raise|with|lambda|pass|None|True|False)\b/g, '<span style="color: #ff7b72; font-weight: bold;">$1</span>');
+        esc = esc.replace(/(['"`])(.*?)\1/g, '<span style="color: #a5d6ff;">$1$2$1</span>');
+        esc = esc.replace(/\b(\d+)\b/g, '<span style="color: #79c0ff;">$1</span>');
+        esc = esc.replace(/(#.*)/g, '<span style="color: #8b949e; font-style: italic;">$1</span>');
+      }
+
+      return esc;
+    }
+
+    // Line numbered premium code previewer
+    function renderCodePreview(content, language = '') {
+      const lines = content.split('\n');
+      const highlighted = highlightCode(content, language);
+      const highlightedLines = highlighted.split('\n');
+
+      const linesHtml = lines.map((line, idx) => {
+        return `
+          <div class="code-line">
+            <span class="line-number">${idx + 1}</span>
+            <span class="line-text">${highlightedLines[idx] || ''}</span>
+          </div>
+        `;
+      }).join('');
+      return `<div class="code-preview-container">${linesHtml}</div>`;
+    }
+
+    // Elegant markdown text processing
+    function renderMarkdown(text) {
+      if (!text) return '';
+      let html = escapeHtml(text);
+
+      // 1. Code Blocks parsing
+      html = html.replace(/```([a-zA-Z0-9-]*)\n([\s\S]*?)```/g, (match, lang, code) => {
+        return `<pre><code class="language-${lang}">${highlightCode(code.trim(), lang)}</code></pre>`;
+      });
+
+      // 2. Inline code parsing
+      html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+      // 3. Bold/Strong parsing
+      html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+
+      // 4. Italic/Em parsing
+      html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+
+      // 5. Line breaks splitting into custom paragraphs & lists
+      const sections = html.split(/\n\s*\n/);
+      const processed = sections.map(s => {
+        const trimmed = s.trim();
+        if (trimmed.startsWith('<pre') || trimmed.startsWith('<ul') || trimmed.startsWith('<ol')) {
+          return trimmed;
+        }
+
+        // Checklist / List item parsing
+        if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+          const lines = trimmed.split(/\n[-*]\s+/);
+          if (lines[0].startsWith('- ') || lines[0].startsWith('* ')) {
+            lines[0] = lines[0].substring(2);
+          }
+          return '<ul>' + lines.map(line => `<li>${line.replace(/\n/g, '<br>')}</li>`).join('') + '</ul>';
+        }
+
+        return `<p>${trimmed.replace(/\n/g, '<br>')}</p>`;
+      });
+
+      return processed.join('\n');
+    }
+
+    // Historical UI messages compiler
+    function renderChatHistory() {
+      const container = document.getElementById('chat-history');
+      if (!container) return;
+
+      const emptyState = document.getElementById('chat-empty-state');
+      if (State.chat.history.length === 0) {
+        emptyState.classList.remove('hidden');
+        return;
+      } else {
+        emptyState.classList.add('hidden');
+      }
+
+      // Preserve currently open previews IDs
+      const openPreviews = new Set();
+      document.querySelectorAll('.code-preview-outer.open').forEach(el => {
+        openPreviews.add(el.id);
+      });
+
+      container.innerHTML = '';
+
+      State.chat.history.forEach((msg, idx) => {
+        const msgEl = document.createElement('div');
+        msgEl.className = `message message-${msg.role}`;
+
+        const avatarIcon = msg.role === 'user' ? '🧑' : '🤖';
+
+        let customContentHtml = `
+          <div class="avatar">${avatarIcon}</div>
+          <div class="message-content">
+            <div class="message-bubble">
+              ${renderMarkdown(msg.text)}
+            </div>
+        `;
+
+        // If assistant has a list of pending/executed actions
+        if (msg.role === 'assistant' && msg.operations && msg.operations.length > 0) {
+          const isExec = msg.executed;
+          const statusText = isExec ? (msg.approved ? 'SUKSES DIEKSEKUSI' : 'DIBATALKAN') : 'MENUNGGU PERSETUJUAN';
+          const cardClass = isExec ? 'op-card executed' : 'op-card';
+
+          let opsHtml = '';
+          msg.operations.forEach((op, opIdx) => {
+            let opTitle = '';
+            let opIconClass = '';
+            let viewBtnHtml = '';
+
+            if (op.op === 'create_branch') {
+              opTitle = `Create Branch: ${op.branch}`;
+              opIconClass = 'op-icon-branch';
+            } else if (op.op === 'create_file') {
+              opTitle = `Create: ${op.path}`;
+              opIconClass = 'op-icon-create';
+              viewBtnHtml = `<button class="op-item-view-btn" data-target="preview-${idx}-${opIdx}">Lihat Berkas</button>`;
+            } else if (op.op === 'edit_file') {
+              opTitle = `Edit: ${op.path}`;
+              opIconClass = 'op-icon-edit';
+              viewBtnHtml = `<button class="op-item-view-btn" data-target="preview-${idx}-${opIdx}">Lihat Perubahan</button>`;
+            } else if (op.op === 'delete_file') {
+              opTitle = `Delete: ${op.path}`;
+              opIconClass = 'op-icon-delete';
+            }
+
+            const previewId = `preview-${idx}-${opIdx}`;
+            const isPreviewOpen = openPreviews.has(previewId);
+
+            opsHtml += `
+              <div class="op-item">
+                <div class="op-item-meta">
+                  <div class="op-item-left">
+                    <div class="op-item-icon ${opIconClass}">
+                      ${op.op.substring(0,2).toUpperCase()}
+                    </div>
+                    <span class="op-item-path" title="${op.path || op.branch}">${op.path || op.branch}</span>
+                  </div>
+                  ${viewBtnHtml}
+                </div>
+                ${(op.op === 'create_file' || op.op === 'edit_file') ? `
+                  <div class="code-preview-outer ${isPreviewOpen ? 'open' : ''}" id="${previewId}">
+                    ${renderCodePreview(op.content, op.path.split('.').pop())}
+                  </div>
+                ` : ''}
+              </div>
+            `;
+          });
+
+          customContentHtml += `
+            <div class="${cardClass}" id="op-card-${idx}">
+              <div class="op-card-header">
+                <div class="op-card-title">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 16 12 12 8 16"></polyline><line x1="12" y1="12" x2="12" y2="21"></line><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"></path><polyline points="16 16 12 12 8 16"></polyline></svg>
+                  <span>${msg.operations.length} Operasi Terjadwal</span>
+                </div>
+                <span class="op-card-badge">${statusText}</span>
+              </div>
+              <div class="op-card-body">
+                ${opsHtml}
+                
+                <div class="op-commit-box">
+                  <span style="font-weight: bold; color: var(--text-secondary);">Suggested Commit Message:</span>
+                  <span style="font-family: var(--font-mono); color: var(--accent);">${msg.suggestedCommitMessage}</span>
+                </div>
+
+                ${!isExec ? `
+                  <div class="op-card-actions">
+                    <button class="btn-cancel" onclick="cancelPendingOperations(${idx})">Batalkan</button>
+                    <button class="btn-execute" onclick="executePendingOperations(${idx})">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                      Setujui & Jalankan
+                    </button>
+                  </div>
+                ` : `
+                  <div style="font-size: 11px; color: var(--text-muted); font-style: italic; text-align: right; margin-top: 4px;">
+                    Operasi ini telah diselesaikan pada ${new Date(msg.timestamp).toLocaleTimeString()}.
+                  </div>
+                `}
+              </div>
+            </div>
+          `;
+        }
+
+        customContentHtml += `</div>`; // Close message-content
+        msgEl.innerHTML = customContentHtml;
+        container.appendChild(msgEl);
+      });
+
+      // Bind dynamic view details event listeners
+      document.querySelectorAll('.op-item-view-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const targetId = e.target.dataset.target;
+          const previewEl = document.getElementById(targetId);
+          if (previewEl) {
+            const isOpen = previewEl.classList.contains('open');
+            if (isOpen) {
+              previewEl.classList.remove('open');
+              e.target.textContent = 'Lihat Berkas';
+            } else {
+              previewEl.classList.add('open');
+              e.target.textContent = 'Sembunyikan';
+            }
+          }
+        });
+      });
+    }
+
+    function scrollToBottom() {
+      const container = document.getElementById('chat-history');
+      if (container) {
+        container.scrollTop = container.scrollHeight;
+      }
+    }
+
+    // ==========================================
+    // J. STATE SYSTEM COORDINATORS
+    // ==========================================
+    async function syncRepository(showSuccess = true) {
+      if (State.repo.isSyncing) return;
+
+      const token = State.credentials.githubToken;
+      const repo = State.credentials.githubRepo;
+      if (!token || !repo) return;
+
+      State.repo.isSyncing = true;
+      updateSyncButtonState(true);
+      
+      const badgeText = document.getElementById('sync-status-text');
+      const badgeIcon = document.getElementById('sync-status-badge');
+      badgeIcon.className = 'badge';
+      badgeText.textContent = 'Menyinkronkan...';
+
+      logTerminal(`[Sync Engine] Menghubungkan ke repositori "${repo}"...`, 'info');
+
+      try {
+        // 1. Load available branches
+        const branches = await GitHubAPI.fetchBranches();
+        State.repo.branches = branches.map(b => b.name);
+
+        // Ensure active state branch fits options
+        if (!State.repo.branches.includes(State.repo.branch)) {
+          State.repo.branch = State.repo.branches.includes('main') 
+            ? 'main' 
+            : (State.repo.branches.includes('master') ? 'master' : (State.repo.branches[0] || ''));
+        }
+
+        populateBranchSelect();
+
+        // 2. Fetch full file contents trees
+        const tree = await GitHubAPI.fetchTree(State.repo.branch);
+        State.repo.tree = tree;
+
+        // Force redraw explorer systems
+        renderTreeExplorer();
+        updateSelectedContextUI();
+        updateHeaderMeta();
+
+        badgeIcon.className = 'badge badge-active';
+        badgeText.textContent = 'Terhubung';
+
+        logTerminal(`[Sync Engine] Sinkronisasi repositori berhasil diselesaikan.`, 'success');
+        if (showSuccess) showToast(`Repositori "${repo}" berhasil disinkronkan.`, 'success');
+
+      } catch (err) {
+        logTerminal(`[Sync Engine Error] Gagal menyinkronkan repositori: ${err.message}`, 'error');
+        showToast(`Sinkronisasi Gagal: ${err.message}`, 'error');
+
+        badgeIcon.className = 'badge badge-expired';
+        badgeText.textContent = 'Koneksi Terputus';
+      } finally {
+        State.repo.isSyncing = false;
+        updateSyncButtonState(false);
+      }
+    }
+
+    function updateHeaderMeta() {
+      const repoNameText = document.getElementById('repo-name-text');
+      const activeModelBadge = document.getElementById('active-model-badge');
+
+      if (State.credentials.githubRepo) {
+        repoNameText.textContent = State.credentials.githubRepo;
+      } else {
+        repoNameText.textContent = 'Belum Terhubung';
+      }
+
+      if (State.credentials.aiModel) {
+        activeModelBadge.textContent = `Model: ${State.credentials.aiModel}`;
+      } else {
+        activeModelBadge.textContent = 'Model: -';
+      }
+    }
+
+    function populateBranchSelect() {
+      const select = document.getElementById('branch-select');
+      if (!select) return;
+
+      select.innerHTML = '';
+      State.repo.branches.forEach(branchName => {
+        const opt = document.createElement('option');
+        opt.value = branchName;
+        opt.textContent = branchName;
+        if (branchName === State.repo.branch) opt.selected = true;
+        select.appendChild(opt);
+      });
+    }
+
+    function updateSyncButtonState(syncing) {
+      const syncBtn = document.getElementById('sync-repo-btn');
+      const syncIcon = document.getElementById('sync-icon-svg');
+      if (!syncBtn) return;
+
+      if (syncing) {
+        syncBtn.disabled = true;
+        syncIcon.classList.add('syncing-spin');
+      } else {
+        syncBtn.disabled = false;
+        syncIcon.classList.remove('syncing-spin');
+      }
+    }
+
+    function getFileSha(path) {
+      const file = State.repo.tree.find(item => item.path === path);
+      return file ? file.sha : null;
+    }
+
+    // ==========================================
+    // K. MODALS & UI VISIBILITY TOGGLERS
+    // ==========================================
+    function openSettingsModal() {
+      const modal = document.getElementById('settings-modal');
+      
+      // Load current configurations back into inputs
+      document.getElementById('setting-gh-token').value = State.credentials.githubToken || '';
+      document.getElementById('setting-gh-repo').value = State.credentials.githubRepo || '';
+      document.getElementById('setting-ai-provider').value = State.credentials.aiProvider || 'gemini';
+      document.getElementById('setting-ai-model').value = State.credentials.aiModel || '';
+      document.getElementById('setting-ai-key').value = State.credentials.aiApiKey || '';
+
+      // Set options pills visibility
+      toggleModelSuggestions(State.credentials.aiProvider);
+
+      modal.style.display = 'flex';
+      setTimeout(() => { modal.classList.add('open'); }, 10);
+      State.ui.settingsOpen = true;
+    }
+
+    function closeSettingsModal() {
+      const modal = document.getElementById('settings-modal');
+      modal.classList.remove('open');
+      setTimeout(() => { modal.style.display = 'none'; }, 300);
+      State.ui.settingsOpen = false;
+    }
+
+    function toggleModelSuggestions(provider) {
+      const geminiPills = document.getElementById('model-suggestions-gemini');
+      const groqPills = document.getElementById('model-suggestions-groq');
+      if (provider === 'gemini') {
+        geminiPills.classList.remove('hidden');
+        groqPills.classList.add('hidden');
+      } else {
+        geminiPills.classList.add('hidden');
+        groqPills.classList.remove('hidden');
+      }
+    }
+
+    function toggleTerminal(forceState = null) {
+      const termPanel = document.getElementById('terminal-panel');
+      const isOpen = forceState !== null ? forceState : !State.ui.terminalOpen;
+
+      if (isOpen) {
+        termPanel.classList.add('open');
+        State.ui.terminalOpen = true;
+        // Scroll terminal to base log
+        const content = document.getElementById('terminal-content');
+        if (content) content.scrollTop = content.scrollHeight;
+      } else {
+        termPanel.classList.remove('open');
+        State.ui.terminalOpen = false;
+      }
+    }
+
+    // ==========================================
+    // L. EVENTS BINDING & SHORTCUTS LISTENERS
+    // ==========================================
+    function setupEventListeners() {
+      // Toggle Modal Buttons
+      document.getElementById('settings-trigger-btn').addEventListener('click', openSettingsModal);
+      document.getElementById('settings-close-btn').addEventListener('click', closeSettingsModal);
+      document.getElementById('settings-cancel-btn').addEventListener('click', closeSettingsModal);
+      document.getElementById('guide-setup-btn').addEventListener('click', openSettingsModal);
+
+      // Provider Suggester Dynamic Changes
+      document.getElementById('setting-ai-provider').addEventListener('change', (e) => {
+        const val = e.target.value;
+        toggleModelSuggestions(val);
+        // Autopopulate typical defaults
+        const modelInput = document.getElementById('setting-ai-model');
+        if (val === 'gemini') {
+          modelInput.value = 'gemini-1.5-flash';
+        } else {
+          modelInput.value = 'llama-3.1-70b-versatile';
+        }
+      });
+
+      // Suggestion Pills Click handler
+      document.querySelectorAll('.model-pill').forEach(pill => {
+        pill.addEventListener('click', (e) => {
+          const modelName = e.target.dataset.model;
+          document.getElementById('setting-ai-model').value = modelName;
+        });
+      });
+
+      // Settings Save Form Handler
+      document.getElementById('settings-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const token = document.getElementById('setting-gh-token').value.trim();
+        const repo = document.getElementById('setting-gh-repo').value.trim();
+        const provider = document.getElementById('setting-ai-provider').value;
+        const model = document.getElementById('setting-ai-model').value.trim();
+        const apiKey = document.getElementById('setting-ai-key').value.trim();
+
+        // Validation rule username/repo-name
+        const repoRegex = /^[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+$/;
+        if (!repoRegex.test(repo)) {
+          showToast('Format repositori salah. Gunakan: username/nama-repositori', 'error');
+          return;
+        }
+
+        saveCredentials({
+          githubToken: token,
+          githubRepo: repo,
+          aiProvider: provider,
+          aiModel: model,
+          aiApiKey: apiKey
+        });
+
+        showToast('Kredensial disimpan! Menghubungkan ke repositori...', 'info');
+        closeSettingsModal();
+
+        // Trigger Repo Sync Immediately
+        await syncRepository();
+      });
+
+      // Branch Dropdown Selector Event
+      document.getElementById('branch-select').addEventListener('change', (e) => {
+        const branchVal = e.target.value;
+        if (branchVal) {
+          State.repo.branch = branchVal;
+          syncRepository();
+        }
+      });
+
+      // Manual Repo Sync Button
+      document.getElementById('sync-repo-btn').addEventListener('click', () => {
+        syncRepository();
+      });
+
+      // Chat input text Auto-resize
+      const textarea = document.getElementById('chat-textarea');
+      textarea.addEventListener('input', () => {
+        textarea.style.height = '48px';
+        textarea.style.height = (textarea.scrollHeight) + 'px';
+      });
+
+      // Send chat triggered on click
+      document.getElementById('send-chat-btn').addEventListener('click', submitChatPrompt);
+
+      // Clear Conversation Logs
+      document.getElementById('clear-chat-btn').addEventListener('click', () => {
+        if (confirm('Apakah Anda yakin ingin menghapus seluruh riwayat percakapan?')) {
+          State.chat.history = [];
+          localStorage.removeItem('gitcraft_chat_history');
+          renderChatHistory();
+          logTerminal('Riwayat percakapan dibersihkan oleh pengguna.', 'warning');
+          showToast('Riwayat percakapan dihapus.', 'info');
+        }
+      });
+
+      // Terminal Toggling Actions
+      document.getElementById('terminal-toggle-btn').addEventListener('click', () => toggleTerminal());
+      document.getElementById('terminal-close-btn').addEventListener('click', () => toggleTerminal(false));
+      document.getElementById('terminal-clear-btn').addEventListener('click', () => {
+        const content = document.getElementById('terminal-content');
+        if (content) content.innerHTML = '';
+        logTerminal('Terminal logs dibersihkan.', 'debug');
+      });
+
+      // Explorer live filter
+      document.getElementById('file-search-input').addEventListener('input', () => {
+        renderTreeExplorer();
+      });
+
+      // Keyboard Shortcut listeners
+      window.addEventListener('keydown', (e) => {
+        // 1. Ctrl + ` to toggle bottom terminal drawer
+        if (e.ctrlKey && e.key === '`') {
+          e.preventDefault();
+          toggleTerminal();
+        }
+
+        // 2. Ctrl + , to open settings dialog
+        if (e.ctrlKey && e.key === ',') {
+          e.preventDefault();
+          if (State.ui.settingsOpen) {
+            closeSettingsModal();
+          } else {
+            openSettingsModal();
+          }
+        }
+
+        // 3. Ctrl + Enter inside chat textarea to send query
+        if (e.ctrlKey && e.key === 'Enter') {
+          if (document.activeElement === textarea) {
+            e.preventDefault();
+            submitChatPrompt();
+          }
+        }
+
+        // 4. Escape key to dismiss modals
+        if (e.key === 'Escape') {
+          if (State.ui.settingsOpen) {
+            closeSettingsModal();
+          }
+        }
+      });
+    }
+  </script>
+</body>
+</html>
