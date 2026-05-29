@@ -1533,36 +1533,88 @@ else { init(); }
 // ============================================================
 const Minifier = {
   terserLoaded: false,
+  terserLoading: false, // Flag untuk mencegah double-load
 
   async loadTerser() {
-    if (Minifier.terserLoaded || typeof Terser !== 'undefined') {
-      Minifier.terserLoaded = true;
+    // 1. Cek jika sudah loaded
+    if (Minifier.terserLoaded && typeof window.Terser !== 'undefined' && typeof window.Terser.minify === 'function') {
       return true;
     }
+    
+    // 2. Cek jika sedang loading (mencegah race condition)
+    if (Minifier.terserLoading) {
+      return new Promise((resolve) => {
+        const checkLoaded = setInterval(() => {
+          if (Minifier.terserLoaded && typeof window.Terser !== 'undefined') {
+            clearInterval(checkLoaded);
+            resolve(true);
+          }
+        }, 100);
+      });
+    }
+
+    Minifier.terserLoading = true;
+    Terminal.log('info', '⏳ Loading Terser minifier library...');
+
     return new Promise((resolve) => {
       const script = document.createElement('script');
-      script.src = 'https://cdn.jsdelivr.net/npm/terser@5.31.0/dist/bundle.min.js';
+      // ✅ Gunakan versi spesifik yang stabil dan UMD-compatible
+      script.src = 'https://cdn.jsdelivr.net/npm/terser@5.48.0/dist/bundle.min.js';
+      script.crossOrigin = 'anonymous';
+      
       script.onload = () => {
-        Minifier.terserLoaded = true;
-        resolve(true);
+        // Verifikasi ekstra: Pastikan API Terser benar-benar tersedia
+        setTimeout(() => {
+          if (typeof window.Terser !== 'undefined' && typeof window.Terser.minify === 'function') {
+            Minifier.terserLoaded = true;
+            Minifier.terserLoading = false;
+            Terminal.log('ok', '✅ Terser library loaded successfully');
+            resolve(true);
+          } else {
+            console.error('[Minifier] Terser loaded but API not found:', window.Terser);
+            Minifier.terserLoading = false;
+            UI.toast('Minifier Error', 'Terser library failed to initialize.', 'error');
+            resolve(false);
+          }
+        }, 100); // Delay kecil untuk inisialisasi internal Terser
       };
-      script.onerror = () => {
-        UI.toast('Failed to load minifier', 'Check your internet connection.', 'error');
+      
+      script.onerror = (e) => {
+        console.error('[Minifier] Failed to load Terser script', e);
+        Minifier.terserLoading = false;
+        UI.toast('Network Error', 'Failed to load Terser from CDN. Check connection.', 'error');
         resolve(false);
       };
+      
       document.head.appendChild(script);
     });
   },
 
   async minifyMarkedFiles() {
-    const jsFiles = State.contextFiles.filter(f => f.toLowerCase()
-      .endsWith('.js'));
+    // ✅ Cek koneksi GitHub sebelum mulai
+    if (!State.githubToken || !State.githubUser || !State.githubRepo) {
+      UI.toast('Not connected', 'Please connect GitHub repo first to minify files.', 'warning');
+      return;
+    }
+
+    const jsFiles = State.contextFiles.filter(f => f.toLowerCase().endsWith('.js'));
     if (jsFiles.length === 0) {
       UI.toast('No JS files marked', 'Please select JavaScript files in the tree first.', 'warning');
       return;
     }
 
-    if (!await Minifier.loadTerser()) return;
+    // Load Terser dengan error handling
+    if (!await Minifier.loadTerser()) {
+      Terminal.log('err', 'Aborting minify: Terser not available');
+      return;
+    }
+
+    // Referensi eksplisit ke global object
+    const TerserLib = window.Terser;
+    if (!TerserLib || !TerserLib.minify) {
+      UI.toast('Minifier Error', 'Terser is not properly loaded. Please refresh the page.', 'error');
+      return;
+    }
 
     Terminal.log('info', `⚡ Minifying ${jsFiles.length} marked JS file(s)...`);
     UI.toast('Minifying', `Processing ${jsFiles.length} file(s)...`, 'info', 3000);
@@ -1570,72 +1622,68 @@ const Minifier = {
     let successCount = 0;
     for (const filePath of jsFiles) {
       try {
+        Terminal.log('info', `Processing: ${filePath}`);
+        
+        // 1. Baca file dari GitHub
         const data = await GitHub.getFileContent(filePath);
+        if (!data || !data.content) throw new Error('Empty file content from GitHub');
+        
         const content = base64Decode(data.content);
 
-        // ✅ CONFIG KHUSUS UNTUK FORMAT RAAJS
-        const result = await Terser.minify(content, {
-          // ── KOMENTAR: Preserve header penting ──────────────────
+        // 2. Minify + Generate Source Map
+        // ✅ Tambahkan try-catch spesifik untuk konfigurasi Terser
+        const result = await TerserLib.minify(content, {
           format: {
             comments: (node, comment) => {
               const text = comment.value;
-              // Simpan komentar yang mengandung: @license, @preserve, RaaJS, atau blok header
               return /@license|@preserve|RaaJS|ANATOMI|FILOSOFI|CHANGELOG|v\d+\.\d+/.test(text);
             },
-            ascii_only: false, // ✅ Izinkan Unicode (box-drawing chars: ═, ─, │, dll)
+            ascii_only: false,
             beautify: false
           },
-
-          // ── SOURCE MAP ────────────────────────────────────────
           sourceMap: {
             filename: filePath,
-            url: `${filePath}.map`,
-            includeSources: true // ✅ Embed source content di map (opsional, untuk debugging)
+            url: 'inline', // Kita akan handle manual agar path-nya benar
+            includeSources: true
           },
-
-          // ── COMPRESS: Optimasi aman untuk IIFE/plugin ─────────
           compress: {
-            drop_console: false, // Jangan hapus console.log (debugging)
-            pure_funcs: [], // Jangan asumsikan fungsi pure
-            keep_fnames: /Raa|Plugin/, // Preserve nama fungsi penting
-            module: false, // Format IIFE, bukan ES Module
-            toplevel: true, // Aman karena dibungkus IIFE
-            passes: 2 // Extra optimization pass
+            drop_console: false,
+            pure_funcs: [],
+            keep_fnames: /Raa|Plugin/,
+            module: false,
+            toplevel: true,
+            passes: 2
           },
-
-          // ── MANGLE: Aman untuk plugin system ──────────────────
           mangle: {
             toplevel: true,
-            reserved: ['Raa', 'RaaTemplate', 'window', 'document', 'queueMicrotask'] // Jangan mangle global API
+            reserved: ['Raa', 'RaaTemplate', 'window', 'document', 'queueMicrotask']
           },
-
-          // ── PARSE: Handle syntax modern ───────────────────────
-          parse: {
-            bare_returns: false
-          }
+          parse: { bare_returns: false }
         });
 
         if (result.error) throw new Error(result.error);
+        if (!result.code) throw new Error('Minification produced empty output');
 
-        // ✅ Tambahkan sourcemap URL comment di akhir minified file
+        // 3. Tentukan path output
         const minPath = filePath.replace(/\.js$/i, '.min.js');
         const mapPath = filePath + '.map';
+        
+        // ✅ FIX: Gunakan hanya nama file untuk source map URL agar relatif benar
+        const mapFilename = mapPath.split('/').pop(); 
 
-        // Pastikan minified code punya reference ke map file
-        const minifiedWithRef = result.code + `\n//# sourceMappingURL=${minPath}.map\n`;
+        // 4. Tambahkan reference source map di akhir file
+        // Format: //# sourceMappingURL=nama-file.min.js.map
+        const minifiedWithRef = result.code + `\n//# sourceMappingURL=${mapFilename}\n`;
 
-        State.stagedFiles.push({
-          name: minPath,
-          content: minifiedWithRef
-        });
-        State.stagedFiles.push({
-          name: mapPath,
-          content: result.map
-        });
+        // 5. Push ke staged files
+        State.stagedFiles.push({ name: minPath, content: minifiedWithRef });
+        State.stagedFiles.push({ name: mapPath, content: result.map });
 
-        Terminal.log('ok', `✓ ${filePath} → ${minPath} + ${mapPath}`);
+        Terminal.log('ok', `✓ ${filePath} → ${minPath} + ${mapFilename}`);
         successCount++;
+        
       } catch (e) {
+        console.error('[Minify Error]', filePath, e);
         Terminal.log('err', `✗ Failed to minify ${filePath}: ${e.message}`);
         UI.toast('Minify failed', `Error on ${filePath.split('/').pop()}: ${e.message}`, 'error');
       }
@@ -1644,11 +1692,10 @@ const Minifier = {
     renderStagedFiles();
     UI.toast('Minification complete', `${successCount}/${jsFiles.length} file(s) processed.`, 'success');
     if (successCount > 0) {
-      addMessage('system', `✅ Minified ${successCount} JS file(s). Header comments preserved. Use /commit-staged to push.`);
+      addMessage('system', `✅ Minified ${successCount} JS file(s). Check staged files to commit.`);
     }
   }
 };
-
 </script>
 </body>
 </html>
