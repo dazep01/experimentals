@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>GitMind — AI-Native GitHub Workspace</title>
+  <title>GitMoire — AI-Native GitHub Workspace</title>
   <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0 }
 
@@ -476,7 +476,7 @@
 <path d="M 5.21 16.81L 8.13 19.11L 8.1 15.56L 10.52 15.8L 8.65 9.54L 7.94 13.19L 4.31 12.53Z" fill="#F55036" fill-opacity="1" stroke="currentColor" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
 <path d="M 18.22 6.22Q 17.91 9.49 14.78 10.23Q 17.7 10.82 18.22 13.73Q 18.43 11.01 21.75 10.32Q 18.76 9.4 18.24 6.37" fill="#4285F4" fill-opacity="1" stroke="#4285F4" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
 <path d="M 15.86 14.42Q 15.96 13.39 16.94 13.16Q 16.02 12.97 15.86 12.06Q 15.79 12.92 14.75 13.13Q 15.69 13.42 15.85 14.37" fill="#8098ff" fill-opacity="1" stroke="currentColor" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
-</svg></div>GitMind</a>
+</svg></div>GitMoire</a>
       <div class="repo-pill" id="repo-pill" onclick="showSettings('repo')">
         <span id="repo-pill-icon">📦</span><span id="repo-pill-text">No repo connected</span>
       </div>
@@ -528,7 +528,7 @@
 <path d="M 18.22 6.22Q 17.91 9.49 14.78 10.23Q 17.7 10.82 18.22 13.73Q 18.43 11.01 21.75 10.32Q 18.76 9.4 18.24 6.37" fill="#4285F4" fill-opacity="1" stroke="#4285F4" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
 <path d="M 15.86 14.42Q 15.96 13.39 16.94 13.16Q 16.02 12.97 15.86 12.06Q 15.79 12.92 14.75 13.13Q 15.69 13.42 15.85 14.37" fill="#8098ff" fill-opacity="1" stroke="currentColor" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
 </svg></div>
-          <div class="welcome-title">GitMind — AI GitHub Workspace</div>
+          <div class="welcome-title">GitMoire — AI GitHub Workspace</div>
           <div class="welcome-sub">Chat with AI to manage your GitHub repository. Stage files locally, then commit them together.</div>
           <div class="welcome-actions">
             <div class="suggestion-chip" onclick="quickPrompt('List all files in the repository')">📋 List files</div>
@@ -562,7 +562,7 @@
 <script>
 'use strict';
 const APP_VERSION = '1.2.0';
-const STORAGE_KEY = 'gitmind_v1';
+const STORAGE_KEY = 'GitMoire_v1';
 const EXPIRY_DAYS = 7;
 
 const State = {
@@ -626,7 +626,7 @@ const AI = {
     const ctxStr = State.contextFiles.length > 0 ? '\nSelected context files:\n' + State.contextFiles.map(f => `  - ${f}`).join('\n') : '';
     const branchStr = State.currentBranch ? `\nActive branch: ${State.currentBranch}` : '';
     const repoStr = (State.githubUser && State.githubRepo) ? `\nRepository: ${State.githubUser}/${State.githubRepo}` : '';
-    return `You are GitMind, an AI-powered GitHub workspace assistant. Help users manage their GitHub repositories through natural language.\n${repoStr}${branchStr}\n${treeStr}${ctxStr}\nCAPABILITIES: Read, create, update, delete files; create branches.\nIMPORTANT RULES:\n1. NEVER auto-execute operations. Always show a preview first.\n2. For file operations, generate a structured operation plan.\n3. Use EXACT format:\n---OPERATION_PLAN---\n{"description":"...","operations":[...],"commitMessage":"..."}\n---END_PLAN---\n4. After showing the plan, add note: "Type /exec to proceed, /cancel to abort."\n5. Be concise and helpful. Respond in the same language the user writes in. Suggest conventional commit messages.`;
+    return `You are GitMoire, an AI-powered GitHub workspace assistant. Help users manage their GitHub repositories through natural language.\n${repoStr}${branchStr}\n${treeStr}${ctxStr}\nCAPABILITIES: Read, create, update, delete files; create branches.\nIMPORTANT RULES:\n1. NEVER auto-execute operations. Always show a preview first.\n2. For file operations, generate a structured operation plan.\n3. Use EXACT format:\n---OPERATION_PLAN---\n{"description":"...","operations":[...],"commitMessage":"..."}\n---END_PLAN---\n4. After showing the plan, add note: "Type /exec to proceed, /cancel to abort."\n5. Be concise and helpful. Respond in the same language the user writes in. Suggest conventional commit messages.`;
   },
   treeToString(nodes, indent) {
     let str = '';
@@ -731,7 +731,7 @@ const Executor = {
   async execute(plan, commitMsg) {
     const results = []; const ops = plan.operations || [];
     Terminal.log('exec', `Executing ${ops.length} operation(s)...`);
-    for (const op of ops) { const result = await Executor.runOp(op, commitMsg || plan.commitMessage || 'chore: update via GitMind'); results.push({ op, success: true, result }); Terminal.log('ok', `✓ ${op.op} ${op.path || op.name || ''}`); }
+    for (const op of ops) { const result = await Executor.runOp(op, commitMsg || plan.commitMessage || 'chore: update via GitMoire'); results.push({ op, success: true, result }); Terminal.log('ok', `✓ ${op.op} ${op.path || op.name || ''}`); }
     await syncRepo(true);
     return results;
   },
@@ -848,7 +848,7 @@ function addMessage(role, content, extra={}) {
   const msg = document.createElement('div'); msg.className = 'msg'; msg.id = extra.id || '';
   const avatarIcon = role==='user'?'👤':role==='ai'?'✦':'⚙';
   const avatarClass = role==='user'?'user':role==='ai'?'ai':'system';
-  const label = role==='user'?'You':role==='ai'?'GitMind AI':'System';
+  const label = role==='user'?'You':role==='ai'?'GitMoire AI':'System';
   msg.innerHTML = `<div class="msg-meta"><div class="msg-avatar ${avatarClass}">${avatarIcon}</div><span>${label}</span><span style="color:var(--text-3)">${new Date().toLocaleTimeString('en',{hour:'2-digit',minute:'2-digit'})}</span></div><div class="msg-body ${avatarClass}" id="${extra.bodyId||''}">${extra.raw?content:renderMarkdown(content)}</div>`;
   chatArea.appendChild(msg); chatArea.scrollTop = chatArea.scrollHeight; return msg;
 }
@@ -860,7 +860,7 @@ function addTypingIndicator() {
 <path d="M 5.21 16.81L 8.13 19.11L 8.1 15.56L 10.52 15.8L 8.65 9.54L 7.94 13.19L 4.31 12.53Z" fill="#F55036" fill-opacity="1" stroke="currentColor" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
 <path d="M 18.22 6.22Q 17.91 9.49 14.78 10.23Q 17.7 10.82 18.22 13.73Q 18.43 11.01 21.75 10.32Q 18.76 9.4 18.24 6.37" fill="#4285F4" fill-opacity="1" stroke="#4285F4" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
 <path d="M 15.86 14.42Q 15.96 13.39 16.94 13.16Q 16.02 12.97 15.86 12.06Q 15.79 12.92 14.75 13.13Q 15.69 13.42 15.85 14.37" fill="#8098ff" fill-opacity="1" stroke="currentColor" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
-</svg></div><span>GitMind AI</span><span style="color:var(--text-3)">typing…</span></div><div class="msg-body ai"><div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div>`;
+</svg></div><span>GitMoire AI</span><span style="color:var(--text-3)">typing…</span></div><div class="msg-body ai"><div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div>`;
   chatArea.appendChild(msg); chatArea.scrollTop = chatArea.scrollHeight; return msg;
 }
 function removeTypingIndicator() { const el = document.getElementById('typing-indicator'); if (el) el.remove(); }
@@ -941,7 +941,7 @@ async function executeOperation() {
 
 function cancelOperation() { if (State.pendingOperation) { State.pendingOperation = null; addMessage('system','✕ Operation cancelled.'); const execBtn = document.getElementById('exec-btn'); if (execBtn) { execBtn.disabled = true; execBtn.textContent = 'Cancelled'; } UI.toast('Operation cancelled','','info'); } }
 function quickPrompt(text) { document.getElementById('chat-input').value = text; handleSend(); }
-function clearChat() { const chatArea = document.getElementById('chat-area'); chatArea.innerHTML = ''; State.chatHistory = []; State.messages = []; State.pendingOperation = null; const welcome = document.createElement('div'); welcome.id='welcome'; welcome.innerHTML = `<div class="welcome-icon">✦</div><div class="welcome-title">Chat cleared</div><div class="welcome-sub">Start a new conversation with GitMind AI.</div><div class="welcome-actions"><div class="suggestion-chip" onclick="showNewFileModal()" style="border-color:var(--green);color:var(--green);">＋ Stage New File</div></div>`; chatArea.appendChild(welcome); Storage.save(); }
+function clearChat() { const chatArea = document.getElementById('chat-area'); chatArea.innerHTML = ''; State.chatHistory = []; State.messages = []; State.pendingOperation = null; const welcome = document.createElement('div'); welcome.id='welcome'; welcome.innerHTML = `<div class="welcome-icon">✦</div><div class="welcome-title">Chat cleared</div><div class="welcome-sub">Start a new conversation with GitMoire AI.</div><div class="welcome-actions"><div class="suggestion-chip" onclick="showNewFileModal()" style="border-color:var(--green);color:var(--green);">＋ Stage New File</div></div>`; chatArea.appendChild(welcome); Storage.save(); }
 
 // ============================================================
 // ===== REPO OPERATIONS =====
@@ -1216,15 +1216,15 @@ function restoreChatHistory() {
 // ===== INIT =====
 // ============================================================
 async function init() {
-  Terminal.log('info', `GitMind v${APP_VERSION} initializing...`);
+  Terminal.log('info', `GitMoire v${APP_VERSION} initializing...`);
   const loaded = Storage.load();
   if (loaded) { Terminal.log('ok','Session loaded from storage'); UI.updateExpiryBadge(); }
   if (State.chatHistory.length > 0) restoreChatHistory();
   UI.renderContextFiles(); UI.renderInputContextTags(); renderStagedFiles();
   if (State.githubToken && State.githubUser && State.githubRepo) { UI.updateStatus(false,'Syncing...'); await syncRepo(true); Terminal.log('ok','Auto-sync complete'); }
   else { UI.updateStatus(false,'Not connected'); Terminal.log('warn','No repo configured — open Settings to get started'); }
-  if (!loaded) setTimeout(() => UI.toast('Welcome to GitMind!','Open Settings (⚙) to connect your GitHub repo and AI provider.','info',6000), 500);
-  Terminal.log('ok','GitMind ready');
+  if (!loaded) setTimeout(() => UI.toast('Welcome to GitMoire!','Open Settings (⚙) to connect your GitHub repo and AI provider.','info',6000), 500);
+  Terminal.log('ok','GitMoire ready');
 }
 init();
 </script>
