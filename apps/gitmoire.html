@@ -1527,21 +1527,18 @@ async function init() {
 
 if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', init); } 
 else { init(); }
-  
+
 // ============================================================
-// ===== JS MINIFIER (Terser) =====
+// ===== JS MINIFIER (Terser) - BROWSER-SAFE VERSION =====
 // ============================================================
 const Minifier = {
   terserLoaded: false,
-  terserLoading: false, // Flag untuk mencegah double-load
+  terserLoading: false,
 
   async loadTerser() {
-    // 1. Cek jika sudah loaded
     if (Minifier.terserLoaded && typeof window.Terser !== 'undefined' && typeof window.Terser.minify === 'function') {
       return true;
     }
-    
-    // 2. Cek jika sedang loading (mencegah race condition)
     if (Minifier.terserLoading) {
       return new Promise((resolve) => {
         const checkLoaded = setInterval(() => {
@@ -1558,12 +1555,11 @@ const Minifier = {
 
     return new Promise((resolve) => {
       const script = document.createElement('script');
-      // ✅ Gunakan versi spesifik yang stabil dan UMD-compatible
+      // ✅ Gunakan versi stabil yang diketahui bekerja di browser
       script.src = 'https://cdn.jsdelivr.net/npm/terser@5.48.0/dist/bundle.min.js';
       script.crossOrigin = 'anonymous';
       
       script.onload = () => {
-        // Verifikasi ekstra: Pastikan API Terser benar-benar tersedia
         setTimeout(() => {
           if (typeof window.Terser !== 'undefined' && typeof window.Terser.minify === 'function') {
             Minifier.terserLoaded = true;
@@ -1576,13 +1572,13 @@ const Minifier = {
             UI.toast('Minifier Error', 'Terser library failed to initialize.', 'error');
             resolve(false);
           }
-        }, 100); // Delay kecil untuk inisialisasi internal Terser
+        }, 150);
       };
       
       script.onerror = (e) => {
         console.error('[Minifier] Failed to load Terser script', e);
         Minifier.terserLoading = false;
-        UI.toast('Network Error', 'Failed to load Terser from CDN. Check connection.', 'error');
+        UI.toast('Network Error', 'Failed to load Terser from CDN.', 'error');
         resolve(false);
       };
       
@@ -1591,7 +1587,6 @@ const Minifier = {
   },
 
   async minifyMarkedFiles() {
-    // ✅ Cek koneksi GitHub sebelum mulai
     if (!State.githubToken || !State.githubUser || !State.githubRepo) {
       UI.toast('Not connected', 'Please connect GitHub repo first to minify files.', 'warning');
       return;
@@ -1603,16 +1598,14 @@ const Minifier = {
       return;
     }
 
-    // Load Terser dengan error handling
     if (!await Minifier.loadTerser()) {
       Terminal.log('err', 'Aborting minify: Terser not available');
       return;
     }
 
-    // Referensi eksplisit ke global object
     const TerserLib = window.Terser;
     if (!TerserLib || !TerserLib.minify) {
-      UI.toast('Minifier Error', 'Terser is not properly loaded. Please refresh the page.', 'error');
+      UI.toast('Minifier Error', 'Terser is not properly loaded. Please refresh.', 'error');
       return;
     }
 
@@ -1623,15 +1616,12 @@ const Minifier = {
     for (const filePath of jsFiles) {
       try {
         Terminal.log('info', `Processing: ${filePath}`);
-        
-        // 1. Baca file dari GitHub
         const data = await GitHub.getFileContent(filePath);
         if (!data || !data.content) throw new Error('Empty file content from GitHub');
         
         const content = base64Decode(data.content);
 
-        // 2. Minify + Generate Source Map
-        // ✅ Tambahkan try-catch spesifik untuk konfigurasi Terser
+        // ✅ KONFIGURASI AMAN UNTUK BROWSER: sourceMap: false
         const result = await TerserLib.minify(content, {
           format: {
             comments: (node, comment) => {
@@ -1641,11 +1631,8 @@ const Minifier = {
             ascii_only: false,
             beautify: false
           },
-          sourceMap: {
-            filename: filePath,
-            url: 'inline', // Kita akan handle manual agar path-nya benar
-            includeSources: true
-          },
+          // ⚠️ DISABLE SOURCE MAP di browser untuk menghindari SourceMapGenerator error
+          sourceMap: false,
           compress: {
             drop_console: false,
             pure_funcs: [],
@@ -1664,26 +1651,51 @@ const Minifier = {
         if (result.error) throw new Error(result.error);
         if (!result.code) throw new Error('Minification produced empty output');
 
-        // 3. Tentukan path output
+        // Tentukan path output
         const minPath = filePath.replace(/\.js$/i, '.min.js');
-        const mapPath = filePath + '.map';
         
-        // ✅ FIX: Gunakan hanya nama file untuk source map URL agar relatif benar
-        const mapFilename = mapPath.split('/').pop(); 
+        // Tambahkan comment build info (opsional, untuk tracking)
+        const buildComment = `/* Minified with GitMoire @ ${new Date().toISOString().split('T')[0]} */\n`;
+        const finalCode = buildComment + result.code;
 
-        // 4. Tambahkan reference source map di akhir file
-        // Format: //# sourceMappingURL=nama-file.min.js.map
-        const minifiedWithRef = result.code + `\n//# sourceMappingURL=${mapFilename}\n`;
+        // Push ke staged files (hanya file .min.js, TANPA .map)
+        State.stagedFiles.push({ name: minPath, content: finalCode });
 
-        // 5. Push ke staged files
-        State.stagedFiles.push({ name: minPath, content: minifiedWithRef });
-        State.stagedFiles.push({ name: mapPath, content: result.map });
-
-        Terminal.log('ok', `✓ ${filePath} → ${minPath} + ${mapFilename}`);
+        Terminal.log('ok', `✓ ${filePath} → ${minPath}`);
         successCount++;
         
       } catch (e) {
         console.error('[Minify Error]', filePath, e);
+        
+        // ✅ FALLBACK: Jika error SourceMapGenerator, coba lagi tanpa source map (double-safe)
+        if (e.message.includes('SourceMapGenerator')) {
+          Terminal.log('warn', `Retrying ${filePath} without source map fallback...`);
+          try {
+            const data = await GitHub.getFileContent(filePath);
+            const content = base64Decode(data.content);
+            
+            // Retry dengan konfigurasi minimal
+            const result = await TerserLib.minify(content, {
+              format: { comments: /@license|@preserve|RaaJS/, ascii_only: false },
+              sourceMap: false, // Pastikan false
+              compress: { toplevel: true },
+              mangle: { toplevel: true, reserved: ['Raa', 'RaaTemplate', 'window'] }
+            });
+            
+            if (result.error) throw result.error;
+            
+            const minPath = filePath.replace(/\.js$/i, '.min.js');
+            const finalCode = `/* Minified with GitMoire */\n` + result.code;
+            
+            State.stagedFiles.push({ name: minPath, content: finalCode });
+            Terminal.log('ok', `✓ ${filePath} → ${minPath} (fallback)`);
+            successCount++;
+            continue;
+          } catch (fallbackErr) {
+            Terminal.log('err', `Fallback also failed for ${filePath}: ${fallbackErr.message}`);
+          }
+        }
+        
         Terminal.log('err', `✗ Failed to minify ${filePath}: ${e.message}`);
         UI.toast('Minify failed', `Error on ${filePath.split('/').pop()}: ${e.message}`, 'error');
       }
@@ -1692,7 +1704,8 @@ const Minifier = {
     renderStagedFiles();
     UI.toast('Minification complete', `${successCount}/${jsFiles.length} file(s) processed.`, 'success');
     if (successCount > 0) {
-      addMessage('system', `✅ Minified ${successCount} JS file(s). Check staged files to commit.`);
+      addMessage('system', `✅ Minified ${successCount} JS file(s) (no source maps). Use /commit-staged to push.`);
+      addMessage('system', `💡 Tip: For source maps, use GitHub Actions workflow instead of browser minify.`);
     }
   }
 };
