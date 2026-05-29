@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="icon" type="image/svg+xml" href="https://ibb.co.com/nMdk4KSN">
+  <link rel="icon" type="image/svg+xml" href="https://i.ibb.co.com/r28yqXJR/gitmoire.jpg">
   <title>GitMoire — AI-Native GitHub Workspace</title>
   <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0 }
@@ -562,32 +562,83 @@
 
 <script>
 'use strict';
-const APP_VERSION = '1.2.0';
+
+const APP_VERSION = '1.3.0-HYBRID';
 const STORAGE_KEY = 'GitMoire_v1';
 const EXPIRY_DAYS = 7;
+const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
 const State = {
   provider: 'gemini', aiModel: '', apiKey: '', githubToken: '', githubUser: '', githubRepo: '',
   connected: false, currentBranch: '', branches: [], repoTree: [], contextFiles: [], changedFiles: [],
   chatHistory: [], messages: [], pendingOperation: null, isThinking: false,
-  terminalOpen: false, sidebarOpen: true,
-  newFileTab: 'upload', uploadedFileData: null,
-  stagedFiles: [],
-  commitStagedRequested: false
+  terminalOpen: false, sidebarOpen: true, syncInProgress: false,
+  newFileTab: 'upload', uploadedFileData: null, stagedFiles: [], commitStagedRequested: false
 };
+
+// ============================================================
+// ===== UTILS: SAFE ENCODING & ESCAPING =====
+// ============================================================
+function escapeHtml(str) { 
+  if (typeof str !== 'string') return ''; 
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); 
+}
+
+function base64Encode(str) {
+  try {
+    const utf8Bytes = new TextEncoder().encode(str);
+    const binaryStr = Array.from(utf8Bytes, b => String.fromCharCode(b)).join('');
+    return btoa(binaryStr);
+  } catch (e) {
+    console.error('[Base64Encode Error]', e);
+    throw new Error('Failed to encode file content');
+  }
+}
+
+function base64Decode(b64Str) {
+  try {
+    // atob handles whitespace, no need to manually remove newlines
+    const binaryStr = atob(b64Str.trim());
+    const bytes = new Uint8Array(binaryStr.length);
+    for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
+    return new TextDecoder('utf-8', { fatal: false }).decode(bytes);
+  } catch (e) {
+    console.error('[Base64Decode Error]', e);
+    return '[Invalid File Content]';
+  }
+}
+
+function getFileIcon(name) { 
+  const ext = name.split('.').pop()?.toLowerCase() || ''; 
+  const icons = { js:'🟨',ts:'🔷',jsx:'⚛',tsx:'⚛',html:'🌐',css:'🎨',scss:'🎨',sass:'🎨',json:'📋',md:'📝',txt:'📄',py:'🐍',rb:'💎',go:'🔵',rs:'🦀',java:'☕',kt:'🔷',swift:'🍊',php:'🐘',sh:'⬛',yaml:'⚙',yml:'⚙',toml:'⚙',env:'🔒',gitignore:'👻',png:'🖼',jpg:'🖼',jpeg:'🖼',svg:'🖼',gif:'🖼',pdf:'📕',zip:'📦',tar:'📦',dockerfile:'🐳',lock:'🔒' }; 
+  return icons[ext] || (name.startsWith('.') ? '⚙' : '📄'); 
+}
+
+function isValidBranchName(name) {
+  if (!name || name.trim() === '') return false;
+  const validPattern = /^[a-zA-Z0-9._\/-]+$/;
+  if (!validPattern.test(name)) return false;
+  if (name.startsWith('-') || name.startsWith('.')) return false;
+  if (name.endsWith('.lock')) return false;
+  if (name.includes('..')) return false;
+  if (name.includes('//')) return false;
+  return true;
+}
 
 // ============================================================
 // ===== STORAGE =====
 // ============================================================
 const Storage = {
   save() {
-    const data = {
-      ts: Date.now(), provider: State.provider, aiModel: State.aiModel,
-      apiKey: State.apiKey, githubToken: State.githubToken, githubUser: State.githubUser,
-      githubRepo: State.githubRepo, chatHistory: State.chatHistory.slice(-100),
-      contextFiles: State.contextFiles, currentBranch: State.currentBranch
-    };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    try {
+      const data = {
+        ts: Date.now(), provider: State.provider, aiModel: State.aiModel,
+        apiKey: State.apiKey, githubToken: State.githubToken, githubUser: State.githubUser,
+        githubRepo: State.githubRepo, chatHistory: State.chatHistory.slice(-100),
+        contextFiles: State.contextFiles, currentBranch: State.currentBranch
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    } catch (e) { console.warn('[Storage] Save failed:', e); }
   },
   load() {
     try {
@@ -624,11 +675,42 @@ const Storage = {
 const AI = {
   buildSystemPrompt() {
     const treeStr = State.repoTree.length > 0 ? 'Repository structure:\n' + AI.treeToString(State.repoTree, '') : 'No repository connected yet.';
-    const ctxStr = State.contextFiles.length > 0 ? '\nSelected context files:\n' + State.contextFiles.map(f => `  - ${f}`).join('\n') : '';
+    
+    // ✅ EXPLICIT: Tell AI that contextFiles are OPERATION TARGETS, not just references
+    let ctxStr = '';
+    if (State.contextFiles.length > 0) {
+      ctxStr = `\n⚠️ USER_MARKED_FILES (TARGET FOR OPERATIONS):\n` + 
+        State.contextFiles.map(f => `  - 🎯 ${f}`).join('\n') +
+        `\n→ CRITICAL: If user says "delete marked files", "operate on selected", or "process context", use EXACTLY these paths.`;
+    }
+    
     const branchStr = State.currentBranch ? `\nActive branch: ${State.currentBranch}` : '';
     const repoStr = (State.githubUser && State.githubRepo) ? `\nRepository: ${State.githubUser}/${State.githubRepo}` : '';
-    return `You are GitMoire, an AI-powered GitHub workspace assistant. Help users manage their GitHub repositories through natural language.\n${repoStr}${branchStr}\n${treeStr}${ctxStr}\nCAPABILITIES: Read, create, update, delete files; create branches.\nIMPORTANT RULES:\n1. NEVER auto-execute operations. Always show a preview first.\n2. For file operations, generate a structured operation plan.\n3. Use EXACT format:\n---OPERATION_PLAN---\n{"description":"...","operations":[...],"commitMessage":"..."}\n---END_PLAN---\n4. After showing the plan, add note: "Type /exec to proceed, /cancel to abort."\n5. Be concise and helpful. Respond in the same language the user writes in. Suggest conventional commit messages.`;
+    
+    return `You are GitMoire, an AI-powered GitHub workspace assistant. Help users manage their GitHub repositories through natural language.
+${repoStr}${branchStr}
+${treeStr}
+${ctxStr}
+CAPABILITIES: Read, create, update, delete files; create branches.
+IMPORTANT RULES:
+1. NEVER auto-execute operations. Always show a preview first.
+2. For file operations, generate a structured operation plan.
+3. Use EXACT JSON format wrapped in markers:
+---OPERATION_PLAN---
+{"description":"...","operations":[{"op":"create|update|delete|read|create_branch","path":"full/path.ext","content":"..."}],"commitMessage":"..."}
+---END_PLAN---
+4. After showing the plan, add note: "Type /exec to proceed, /cancel to abort."
+5. If operating on USER_MARKED_FILES, generate one operation per file. Do not invent paths.
+6. Be concise. Respond in the user's language. Suggest conventional commit messages.
+
+EXAMPLE:
+User: "Delete the marked files"
+AI: ---OPERATION_PLAN---
+{"description":"Delete 2 selected files","operations":[{"op":"delete","path":"src/old.js"},{"op":"delete","path":"docs/x.md"}],"commitMessage":"chore: remove deprecated files"}
+---END_PLAN---
+Type /exec to proceed, /cancel to abort.`;
   },
+  
   treeToString(nodes, indent) {
     let str = '';
     for (const node of nodes) {
@@ -637,6 +719,7 @@ const AI = {
     }
     return str;
   },
+  
   async generateResponse(userMessage) {
     if (!State.apiKey) throw new Error('No API key configured. Please go to Settings.');
     State.messages.push({ role: 'user', content: userMessage });
@@ -645,13 +728,21 @@ const AI = {
     else if (State.provider === 'groq') return await AI.callGroq(systemPrompt, State.messages);
     throw new Error('Unknown AI provider: ' + State.provider);
   },
+  
   async callGemini(systemPrompt, messages) {
     const model = State.aiModel || 'gemini-2.0-flash';
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${State.apiKey}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
     const contents = messages.map(m => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] }));
     const body = { systemInstruction: { parts: [{ text: systemPrompt }] }, contents, generationConfig: { temperature: 0.7, maxOutputTokens: 4096 } };
     Terminal.log('info', `[Gemini] Calling ${model}...`);
-    const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    
+    // ✅ Use header instead of URL param for API key (more secure)
+    const res = await fetch(url, { 
+      method: 'POST', 
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': State.apiKey }, 
+      body: JSON.stringify(body) 
+    });
+    
     if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(`Gemini API error: ${err.error?.message || `HTTP ${res.status}`}`); }
     const data = await res.json();
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
@@ -659,6 +750,7 @@ const AI = {
     State.messages.push({ role: 'assistant', content: text });
     return text;
   },
+  
   async callGroq(systemPrompt, messages) {
     const model = State.aiModel || 'llama-3.3-70b-versatile';
     const url = 'https://api.groq.com/openai/v1/chat/completions';
@@ -680,6 +772,7 @@ const AI = {
 const GitHub = {
   baseUrl: 'https://api.github.com',
   headers() { return { 'Authorization': `token ${State.githubToken}`, 'Accept': 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' }; },
+  
   async request(method, path, body) {
     const url = `${this.baseUrl}${path}`;
     Terminal.log('exec', `${method} ${path}`);
@@ -689,18 +782,23 @@ const GitHub = {
     Terminal.log('ok', `Response: ${res.status}`);
     return data;
   },
+  
   async getRepo() { return this.request('GET', `/repos/${State.githubUser}/${State.githubRepo}`); },
   async getBranches() { const data = await this.request('GET', `/repos/${State.githubUser}/${State.githubRepo}/branches?per_page=50`); return data.map(b => b.name); },
   async getTree(branch) { const data = await this.request('GET', `/repos/${State.githubUser}/${State.githubRepo}/git/trees/${branch}?recursive=1`); return data.tree || []; },
   async getFileContent(path, branch) { const ref = branch || State.currentBranch; return this.request('GET', `/repos/${State.githubUser}/${State.githubRepo}/contents/${path}?ref=${ref}`); },
+  
   async createOrUpdateFile(path, content, message, sha, branch) {
-    const encoded = btoa(unescape(encodeURIComponent(content)));
-    const body = { message, content: encoded, branch: branch || State.currentBranch };
+    // ✅ Use safe base64Encode with TextEncoder
+    const body = { message, content: base64Encode(content), branch: branch || State.currentBranch };
     if (sha) body.sha = sha;
     return this.request('PUT', `/repos/${State.githubUser}/${State.githubRepo}/contents/${path}`, body);
   },
+  
   async deleteFile(path, message, sha, branch) { const body = { message, sha, branch: branch || State.currentBranch }; return this.request('DELETE', `/repos/${State.githubUser}/${State.githubRepo}/contents/${path}`, body); },
+  
   async createBranch(name, fromBranch) { const ref = await this.request('GET', `/repos/${State.githubUser}/${State.githubRepo}/git/ref/heads/${fromBranch || State.currentBranch}`); return this.request('POST', `/repos/${State.githubUser}/${State.githubRepo}/git/refs`, { ref: `refs/heads/${name}`, sha: ref.object.sha }); },
+  
   buildTree(flatTree) {
     const root = [], map = {};
     const sorted = [...flatTree].sort((a,b) => a.type !== b.type ? (a.type === 'tree' ? -1 : 1) : a.path.localeCompare(b.path));
@@ -716,58 +814,129 @@ const GitHub = {
 };
 
 // ============================================================
-// ===== COMMAND PARSER =====
+// ===== COMMAND PARSER (WITH VALIDATION) =====
 // ============================================================
 const CommandParser = {
-  parseOperationPlan(aiText) { const m = aiText.match(/---OPERATION_PLAN---\s*([\s\S]*?)\s*---END_PLAN---/); if (!m) return null; try { return JSON.parse(m[1].trim()); } catch(e) { return null; } },
+  parseOperationPlan(aiText) { 
+    const m = aiText.match(/---OPERATION_PLAN---\s*([\s\S]*?)\s*---END_PLAN---/); 
+    if (!m) return null; 
+    try { 
+      const plan = JSON.parse(m[1].trim());
+      // ✅ Validate plan structure
+      if (!plan || !Array.isArray(plan.operations)) return null;
+      for (const op of plan.operations) {
+        if (!op || typeof op.op !== 'string') return null;
+        if (op.op !== 'create_branch' && !op.path) return null;
+      }
+      return plan; 
+    } catch(e) { 
+      Terminal.log('err', `Parse error: ${e.message}`);
+      return null; 
+    } 
+  },
   stripPlan(text) { return text.replace(/---OPERATION_PLAN---[\s\S]*?---END_PLAN---/g, '').trim(); },
-  getOpBadge(op) { const map = { create:'create', update:'update', delete:'delete', create_branch:'branch', read:'read' }; return map[op] || 'read'; },
-  getOpLabel(op) { const map = { create:'+ CREATE', update:'~ UPDATE', delete:'✕ DELETE', create_branch:'⎇ BRANCH', read:'▸ READ' }; return map[op] || op.toUpperCase(); }
+  getOpBadge(op) { 
+    if (!op) return 'read';
+    const map = { create:'create', update:'update', delete:'delete', create_branch:'branch', read:'read' }; 
+    return map[op] || 'read'; 
+  },
+  // ✅ Defensive: prevent toUpperCase on undefined
+  getOpLabel(op) { 
+    if (!op || typeof op !== 'string') return '? UNKNOWN';
+    const map = { create:'+ CREATE', update:'~ UPDATE', delete:'✕ DELETE', create_branch:'⎇ BRANCH', read:'▸ READ' }; 
+    return map[op] || op.toUpperCase(); 
+  }
 };
 
 // ============================================================
-// ===== EXECUTOR =====
+// ===== EXECUTOR (WITH PER-OP ERROR HANDLING) =====
 // ============================================================
 const Executor = {
   async execute(plan, commitMsg) {
     const results = []; const ops = plan.operations || [];
     Terminal.log('exec', `Executing ${ops.length} operation(s)...`);
-    for (const op of ops) { const result = await Executor.runOp(op, commitMsg || plan.commitMessage || 'chore: update via GitMoire'); results.push({ op, success: true, result }); Terminal.log('ok', `✓ ${op.op} ${op.path || op.name || ''}`); }
+    for (const op of ops) { 
+      try {
+        const result = await Executor.runOp(op, commitMsg || plan.commitMessage || 'chore: update via GitMoire'); 
+        results.push({ op, success: true, result }); 
+        Terminal.log('ok', `✓ ${op.op} ${op.path || op.name || ''}`); 
+      } catch (e) {
+        results.push({ op, success: false, error: e.message });
+        Terminal.log('err', `✗ ${op.op} ${op.path || op.name || ''}: ${e.message}`);
+      }
+    }
     await syncRepo(true);
     return results;
   },
+  
   async runOp(op, commitMsg) {
     if (!State.githubToken) throw new Error('GitHub token not configured');
     if (!State.githubUser || !State.githubRepo) throw new Error('Repository not configured');
+    
     switch(op.op) {
-      case 'read': { const data = await GitHub.getFileContent(op.path); return { content: decodeURIComponent(escape(atob(data.content.replace(/\n/g,'')))), sha: data.sha }; }
-      case 'create': { let sha; try { const ex = await GitHub.getFileContent(op.path); sha = ex.sha; } catch {} return await GitHub.createOrUpdateFile(op.path, op.content||'', commitMsg, sha); }
-      case 'update': { let sha; try { const ex = await GitHub.getFileContent(op.path); sha = ex.sha; } catch {} return await GitHub.createOrUpdateFile(op.path, op.content||'', commitMsg, sha); }
-      case 'delete': { const ex = await GitHub.getFileContent(op.path); return await GitHub.deleteFile(op.path, commitMsg, ex.sha); }
-      case 'create_branch': return await GitHub.createBranch(op.name, op.from || State.currentBranch);
+      case 'read': { 
+        const data = await GitHub.getFileContent(op.path); 
+        // ✅ Use safe base64Decode
+        const content = data.content ? base64Decode(data.content) : '';
+        return { content, sha: data.sha }; 
+      }
+      case 'create': { 
+        let existingFile = null;
+        try { existingFile = await GitHub.getFileContent(op.path); } 
+        catch (e) { if (!e.message.includes('404') && !e.message.includes('not found')) throw new Error(`Failed to check if file exists: ${e.message}`); }
+        if (existingFile) throw new Error(`File already exists: ${op.path}. Use update operation instead.`);
+        return await GitHub.createOrUpdateFile(op.path, op.content||'', commitMsg); 
+      }
+      case 'update': { 
+        let sha = null;
+        try { const ex = await GitHub.getFileContent(op.path); sha = ex.sha; } 
+        catch (e) { if (e.message.includes('404') || e.message.includes('not found')) throw new Error(`File does not exist: ${op.path}. Use create operation instead.`); throw e; }
+        if (!sha) throw new Error(`Could not retrieve SHA for file: ${op.path}`);
+        return await GitHub.createOrUpdateFile(op.path, op.content||'', commitMsg, sha); 
+      }
+      case 'delete': { 
+        const ex = await GitHub.getFileContent(op.path); 
+        if (!ex.sha) throw new Error(`Could not retrieve SHA for deletion: ${op.path}`);
+        return await GitHub.deleteFile(op.path, commitMsg, ex.sha); 
+      }
+      case 'create_branch': {
+        if (!op.name || op.name.trim() === '') throw new Error('Branch name cannot be empty');
+        if (!isValidBranchName(op.name)) throw new Error(`Invalid branch name: ${op.name}`);
+        return await GitHub.createBranch(op.name, op.from || State.currentBranch);
+      }
       default: throw new Error(`Unknown operation: ${op.op}`);
     }
   }
 };
 
 // ============================================================
-// ===== TERMINAL =====
+// ===== TERMINAL (WITH SMART AUTO-SCROLL) =====
 // ============================================================
 const Terminal = {
+  shouldAutoScroll: true,
   log(level, msg) {
     const el = document.getElementById('terminal-output');
     const time = new Date().toLocaleTimeString('en', { hour12: false });
     const prefix = { info:'ℹ', ok:'✓', err:'✗', warn:'⚠', exec:'▸' }[level] || '·';
     const line = document.createElement('div'); line.className = 'log-line';
     line.innerHTML = `<span class="log-time">${time}</span><span class="log-prefix ${level}">${prefix}</span><span class="log-msg">${escapeHtml(msg)}</span>`;
-    el.appendChild(line); el.scrollTop = el.scrollHeight;
+    
+    const wasAtBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 50;
+    el.appendChild(line); 
+    if (wasAtBottom || Terminal.shouldAutoScroll) el.scrollTop = el.scrollHeight;
     if (level === 'err' && !State.terminalOpen) toggleTerminal(true);
   },
   clear() { document.getElementById('terminal-output').innerHTML = ''; }
 };
 
+// Smart scroll: stop auto-scroll if user scrolls up
+document.getElementById('terminal-output')?.addEventListener('scroll', () => {
+  const el = document.getElementById('terminal-output');
+  Terminal.shouldAutoScroll = el.scrollHeight - el.scrollTop - el.clientHeight < 50;
+});
+
 // ============================================================
-// ===== UI =====
+// ===== UI (WITH SAFE EVENT DELEGATION) =====
 // ============================================================
 const UI = {
   toast(title, msg, type='info', duration=4000) {
@@ -778,6 +947,7 @@ const UI = {
     container.appendChild(el);
     setTimeout(() => { el.classList.add('removing'); setTimeout(() => el.remove(), 300); }, duration);
   },
+  
   updateStatus(connected, text) {
     State.connected = connected;
     document.getElementById('status-dot').className = `status-dot ${connected?'connected':''}`;
@@ -787,11 +957,13 @@ const UI = {
       document.getElementById('repo-pill-icon').textContent = '📦';
     }
   },
+  
   renderTree(nodes, container) {
     container.innerHTML = '';
     if (!nodes || nodes.length === 0) { container.innerHTML = '<div class="tree-empty">Empty repository</div>'; return; }
     UI._renderNodes(nodes, container);
   },
+  
   _renderNodes(nodes, container) {
     for (const node of nodes) {
       const wrapper = document.createElement('div'); wrapper.className = 'tree-node';
@@ -799,6 +971,7 @@ const UI = {
       item.dataset.path = node.path; item.dataset.type = node.type;
       const icon = node.type==='tree'?'📁':getFileIcon(node.name);
       item.innerHTML = `<span class="tree-icon">${icon}</span>${escapeHtml(node.name)}`;
+      
       if (node.type === 'tree') {
         const children = document.createElement('div'); children.className = 'tree-children hidden';
         let expanded = false;
@@ -813,25 +986,46 @@ const UI = {
       container.appendChild(wrapper);
     }
   },
+  
+  // ✅ FIXED: Safe event delegation to prevent XSS from filenames with quotes
   renderContextFiles() {
     const el = document.getElementById('context-files');
     if (State.contextFiles.length===0) { el.innerHTML = '<div class="tree-empty" style="padding:8px 0;">No files selected</div>'; return; }
-    el.innerHTML = State.contextFiles.map(f => `<div class="ctx-file"><span>${getFileIcon(f)}</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(f)}</span><span class="ctx-remove" onclick="removeContext('${escapeHtml(f)}')">✕</span></div>`).join('');
+    
+    el.innerHTML = State.contextFiles.map(f => 
+      `<div class="ctx-file" data-path="${encodeURIComponent(f)}">
+        <span>${getFileIcon(f)}</span>
+        <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(f)}</span>
+        <span class="ctx-remove" title="Remove from selection">✕</span>
+      </div>`
+    ).join('');
+    
+    // Bind events separately (safe from XSS)
+    el.querySelectorAll('.ctx-remove').forEach(btn => {
+      btn.onclick = (e) => {
+        const path = decodeURIComponent(e.target.closest('.ctx-file').dataset.path);
+        removeContext(path);
+      };
+    });
   },
+  
   renderInputContextTags() {
     const el = document.getElementById('input-context-tags');
     if (State.contextFiles.length===0) { el.innerHTML = ''; return; }
     el.innerHTML = State.contextFiles.map(f => `<div class="ctx-tag">${getFileIcon(f)} ${escapeHtml(f.split('/').pop())}</div>`).join('');
   },
+  
   renderChangedFiles() {
     const el = document.getElementById('changed-files');
     if (State.changedFiles.length===0) { el.innerHTML = '<div class="tree-empty" style="padding:8px 0;">No changes</div>'; return; }
     el.innerHTML = State.changedFiles.map(f => `<div class="changed-file"><span class="cf-badge ${f.status}">${f.status}</span><span style="font-size:11px;color:var(--text-1);overflow:hidden;text-overflow:ellipsis;">${escapeHtml(f.path)}</span></div>`).join('');
   },
+  
   renderBranches() {
     const sel = document.getElementById('branch-select');
     sel.innerHTML = State.branches.map(b => `<option value="${escapeHtml(b)}" ${b===State.currentBranch?'selected':''}>${escapeHtml(b)}</option>`).join('');
   },
+  
   updateExpiryBadge() {
     const info = Storage.getExpiryInfo(); const badge = document.getElementById('expiry-badge');
     if (!info || !State.apiKey) { badge.style.display = 'none'; return; }
@@ -841,7 +1035,7 @@ const UI = {
 };
 
 // ============================================================
-// ===== CHAT =====
+// ===== CHAT FUNCTIONS =====
 // ============================================================
 function addMessage(role, content, extra={}) {
   const chatArea = document.getElementById('chat-area');
@@ -853,18 +1047,16 @@ function addMessage(role, content, extra={}) {
   msg.innerHTML = `<div class="msg-meta"><div class="msg-avatar ${avatarClass}">${avatarIcon}</div><span>${label}</span><span style="color:var(--text-3)">${new Date().toLocaleTimeString('en',{hour:'2-digit',minute:'2-digit'})}</span></div><div class="msg-body ${avatarClass}" id="${extra.bodyId||''}">${extra.raw?content:renderMarkdown(content)}</div>`;
   chatArea.appendChild(msg); chatArea.scrollTop = chatArea.scrollHeight; return msg;
 }
+
 function addTypingIndicator() {
   const chatArea = document.getElementById('chat-area');
   const msg = document.createElement('div'); msg.className = 'msg'; msg.id = 'typing-indicator';
-  msg.innerHTML = `<div class="msg-meta"><div class="msg-avatar ai"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor">
-<path d="M 6.03 2C 6.45 2.01 6.82 2.29 6.95 2.68L 8.72 8L 15.28 8L 17.05 2.68C 17.18 2.29 17.55 2.01 17.97 2C 18.39 1.99 18.77 2.24 18.93 2.63L 21.83 9.87C 22.64 11.92 22.03 14.26 20.31 15.63L 13.25 21.28C 12.52 21.87 11.48 21.87 10.75 21.28L 3.69 15.63C 1.97 14.26 1.36 11.92 2.17 9.87L 5.07 2.63C 5.23 2.24 5.61 1.99 6.03 2Z" fill="white" fill-opacity="1" stroke="currentColor" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M 5.21 16.81L 8.13 19.11L 8.1 15.56L 10.52 15.8L 8.65 9.54L 7.94 13.19L 4.31 12.53Z" fill="#F55036" fill-opacity="1" stroke="currentColor" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M 18.22 6.22Q 17.91 9.49 14.78 10.23Q 17.7 10.82 18.22 13.73Q 18.43 11.01 21.75 10.32Q 18.76 9.4 18.24 6.37" fill="#4285F4" fill-opacity="1" stroke="#4285F4" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M 15.86 14.42Q 15.96 13.39 16.94 13.16Q 16.02 12.97 15.86 12.06Q 15.79 12.92 14.75 13.13Q 15.69 13.42 15.85 14.37" fill="#8098ff" fill-opacity="1" stroke="currentColor" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"/>
-</svg></div><span>GitMoire AI</span><span style="color:var(--text-3)">typing…</span></div><div class="msg-body ai"><div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div>`;
+  msg.innerHTML = `<div class="msg-meta"><div class="msg-avatar ai">✦</div><span>GitMoire AI</span><span style="color:var(--text-3)">typing…</span></div><div class="msg-body ai"><div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div>`;
   chatArea.appendChild(msg); chatArea.scrollTop = chatArea.scrollHeight; return msg;
 }
+
 function removeTypingIndicator() { const el = document.getElementById('typing-indicator'); if (el) el.remove(); }
+
 function addOperationPreview(plan, msgEl) {
   const ops = plan.operations || []; const bodyEl = msgEl.querySelector('.msg-body');
   const preview = document.createElement('div'); preview.className = 'op-preview';
@@ -875,6 +1067,7 @@ function addOperationPreview(plan, msgEl) {
 async function handleSend() {
   const input = document.getElementById('chat-input'); const text = input.value.trim();
   if (!text || State.isThinking) return;
+  
   if (text === '/exec' || text === '/eksekusi') { input.value=''; autoResizeInput(input); if (State.pendingOperation) await executeOperation(); else UI.toast('No pending operation','','warning'); return; }
   if (text === '/cancel') { input.value=''; autoResizeInput(input); cancelOperation(); return; }
   if (text === '/clear') { input.value=''; autoResizeInput(input); clearChat(); return; }
@@ -888,11 +1081,15 @@ async function handleSend() {
     State.chatHistory.push({ role:'ai', content:'Staged files commit plan generated.', ts:Date.now() });
     Storage.save(); return;
   }
+  
   input.value=''; autoResizeInput(input);
   addMessage('user', text); State.chatHistory.push({ role:'user', content:text, ts:Date.now() });
+  
   if (!State.apiKey) { addMessage('ai','⚠️ **No AI API key configured.**\n\nPlease go to **Settings** → **AI Provider** and add your API key.'); return; }
+  
   State.isThinking = true; document.getElementById('send-btn').disabled = true;
   const typingEl = addTypingIndicator();
+  
   try {
     Terminal.log('info', `User: ${text.slice(0,80)}${text.length>80?'...':''}`);
     const response = await AI.generateResponse(text); removeTypingIndicator();
@@ -900,7 +1097,16 @@ async function handleSend() {
     const cleanText = CommandParser.stripPlan(response);
     const msgEl = addMessage('ai', cleanText || '');
     State.chatHistory.push({ role:'ai', content:cleanText, ts:Date.now() });
-    if (plan) { State.pendingOperation = plan; addOperationPreview(plan, msgEl); Terminal.log('info', `Operation plan received: ${plan.operations?.length||0} operation(s)`); }
+    
+    if (plan) { 
+      State.pendingOperation = plan; 
+      addOperationPreview(plan, msgEl); 
+      Terminal.log('info', `Operation plan received: ${plan.operations?.length||0} operation(s)`); 
+    } else if (response.includes('---OPERATION_PLAN---')) {
+      // ✅ Feedback if AI sent malformed plan
+      addMessage('system', '⚠️ AI returned an invalid operation plan. Please rephrase or use standard phrasing like "Create file X with content Y".');
+      Terminal.log('warn', 'AI returned malformed operation plan');
+    }
   } catch(e) { removeTypingIndicator(); addMessage('ai', `❌ **Error:** ${e.message}`); Terminal.log('err', e.message); UI.toast('AI Error', e.message, 'error'); }
   finally { State.isThinking = false; document.getElementById('send-btn').disabled = false; }
   Storage.save();
@@ -909,23 +1115,41 @@ async function handleSend() {
 async function executeOperation() {
   if (!State.pendingOperation) return;
   if (!State.githubToken) { UI.toast('No GitHub token','Please configure your GitHub token in Settings.','error'); return; }
+  
   const plan = State.pendingOperation; State.pendingOperation = null;
   const execBtn = document.getElementById('exec-btn'); if (execBtn) { execBtn.disabled = true; execBtn.textContent = '⟳ Executing...'; }
   addMessage('system', `⚡ Executing ${plan.operations?.length||0} operation(s)...`);
   Terminal.log('exec','Starting execution...');
+  
   try {
     const results = await Executor.execute(plan, plan.commitMessage);
     const successCount = results.filter(r => r.success).length;
     let summary = `✅ **Execution complete!** ${successCount}/${results.length} operation(s) succeeded.\n\n`;
+    
     for (const r of results) {
-      if (r.success) { summary += `- ✓ **${r.op.op}** \`${r.op.path||r.op.name||''}\`\n`; if (r.op.op==='read' && r.result?.content) { const preview = r.result.content.slice(0,300); summary += `\n\`\`\`\n${preview}${r.result.content.length>300?'\n...(truncated)':''}\n\`\`\`\n`; } }
-      else summary += `- ✗ **${r.op.op}** \`${r.op.path||r.op.name||''}\` — ${r.error}\n`;
+      if (r.success) { 
+        summary += `- ✓ **${r.op.op}** \`${r.op.path||r.op.name||''}\`\n`; 
+        if (r.op.op==='read' && r.result?.content) { 
+          const preview = r.result.content.slice(0,300); 
+          summary += `\n\`\`\`\n${preview}${r.result.content.length>300?'\n...(truncated)':''}\n\`\`\`\n`; 
+        } 
+      } else summary += `- ✗ **${r.op.op}** \`${r.op.path||r.op.name||''}\` — ${r.error}\n`;
     }
+    
     addMessage('ai', summary); State.chatHistory.push({ role:'ai', content:summary, ts:Date.now() });
     UI.toast('Execution complete', `${successCount} operation(s) succeeded`, 'success');
     Terminal.log('ok','Execution complete');
-    for (const r of results) { if (!r.success) continue; if (['create','update'].includes(r.op.op)) { const existing = State.changedFiles.find(c=>c.path===r.op.path); if (existing) existing.status='M'; else State.changedFiles.push({ path:r.op.path, status:r.op.op==='create'?'A':'M' }); } else if (r.op.op==='delete') State.changedFiles.push({ path:r.op.path, status:'D' }); }
+    
+    for (const r of results) { 
+      if (!r.success) continue; 
+      if (['create','update'].includes(r.op.op)) { 
+        const existing = State.changedFiles.find(c=>c.path===r.op.path); 
+        if (existing) existing.status='M'; 
+        else State.changedFiles.push({ path:r.op.path, status:r.op.op==='create'?'A':'M' }); 
+      } else if (r.op.op==='delete') State.changedFiles.push({ path:r.op.path, status:'D' }); 
+    }
     UI.renderChangedFiles();
+    
     if (State.commitStagedRequested) {
       State.commitStagedRequested = false;
       if (State.stagedFiles.length > 0) {
@@ -942,15 +1166,29 @@ async function executeOperation() {
 
 function cancelOperation() { if (State.pendingOperation) { State.pendingOperation = null; addMessage('system','✕ Operation cancelled.'); const execBtn = document.getElementById('exec-btn'); if (execBtn) { execBtn.disabled = true; execBtn.textContent = 'Cancelled'; } UI.toast('Operation cancelled','','info'); } }
 function quickPrompt(text) { document.getElementById('chat-input').value = text; handleSend(); }
-function clearChat() { const chatArea = document.getElementById('chat-area'); chatArea.innerHTML = ''; State.chatHistory = []; State.messages = []; State.pendingOperation = null; const welcome = document.createElement('div'); welcome.id='welcome'; welcome.innerHTML = `<div class="welcome-icon">✦</div><div class="welcome-title">Chat cleared</div><div class="welcome-sub">Start a new conversation with GitMoire AI.</div><div class="welcome-actions"><div class="suggestion-chip" onclick="showNewFileModal()" style="border-color:var(--green);color:var(--green);">＋ Stage New File</div></div>`; chatArea.appendChild(welcome); Storage.save(); }
+
+function clearChat() { 
+  const chatArea = document.getElementById('chat-area'); 
+  chatArea.innerHTML = ''; 
+  State.chatHistory = []; State.messages = []; State.pendingOperation = null; 
+  const welcome = document.createElement('div'); 
+  welcome.id='welcome'; 
+  welcome.innerHTML = `<div class="welcome-icon">✦</div><div class="welcome-title">Chat cleared</div><div class="welcome-sub">Start a new conversation with GitMoire AI.</div><div class="welcome-actions"><div class="suggestion-chip" onclick="showNewFileModal()" style="border-color:var(--green);color:var(--green);">＋ Stage New File</div></div>`; 
+  chatArea.appendChild(welcome); 
+  Storage.save(); 
+}
 
 // ============================================================
-// ===== REPO OPERATIONS =====
+// ===== REPO OPERATIONS (WITH SYNC LOCK) =====
 // ============================================================
 async function syncRepo(silent=false) {
+  if (State.syncInProgress) { Terminal.log('warn', 'Sync already in progress, skipping...'); return; }
   if (!State.githubToken || !State.githubUser || !State.githubRepo) { if (!silent) { UI.toast('Not configured','Please set up your GitHub token and repository in Settings.','warning'); showSettings('repo'); } return; }
+  
+  State.syncInProgress = true;
   if (!silent) UI.toast('Syncing',`Fetching ${State.githubUser}/${State.githubRepo}...`,'info',2000);
   Terminal.log('info',`Syncing repo: ${State.githubUser}/${State.githubRepo}`);
+  
   try {
     const repo = await GitHub.getRepo(); const defaultBranch = repo.default_branch;
     const branches = await GitHub.getBranches(); State.branches = branches;
@@ -965,11 +1203,25 @@ async function syncRepo(silent=false) {
     Terminal.log('ok',`Tree loaded: ${flatTree.length} nodes`);
     Storage.save();
   } catch(e) { UI.updateStatus(false,'Error'); Terminal.log('err',e.message); if (!silent) UI.toast('Sync failed',e.message,'error'); }
+  finally { State.syncInProgress = false; }
 }
+
 async function changeBranch(branch) { if (!branch || branch===State.currentBranch) return; State.currentBranch = branch; Terminal.log('info',`Switching to branch: ${branch}`); await syncRepo(true); UI.toast('Branch changed',`Now on ${branch}`,'success',2000); Storage.save(); }
 function collapseAll() { document.querySelectorAll('.tree-children').forEach(el=>el.classList.add('hidden')); document.querySelectorAll('.tree-item.folder .tree-icon').forEach(el=>el.textContent='📁'); }
-function removeContext(path) { State.contextFiles = State.contextFiles.filter(f=>f!==path); UI.renderContextFiles(); UI.renderInputContextTags(); document.querySelectorAll('.tree-item').forEach(el=>{ if(el.dataset.path===path) el.classList.remove('selected'); }); Storage.save(); }
-function clearContext() { State.contextFiles = []; UI.renderContextFiles(); UI.renderInputContextTags(); document.querySelectorAll('.tree-item.selected').forEach(el=>el.classList.remove('selected')); Storage.save(); }
+
+function removeContext(path) { 
+  State.contextFiles = State.contextFiles.filter(f=>f!==path); 
+  UI.renderContextFiles(); UI.renderInputContextTags(); 
+  document.querySelectorAll('.tree-item').forEach(el=>{ if(el.dataset.path===path) el.classList.remove('selected'); }); 
+  Storage.save(); 
+}
+
+function clearContext() { 
+  State.contextFiles = []; 
+  UI.renderContextFiles(); UI.renderInputContextTags(); 
+  document.querySelectorAll('.tree-item.selected').forEach(el=>el.classList.remove('selected')); 
+  Storage.save(); 
+}
 
 // ============================================================
 // ===== STAGED FILES =====
@@ -978,12 +1230,18 @@ function renderStagedFiles() {
   const container = document.getElementById('staged-files');
   const commitBtn = document.getElementById('commit-staged-btn');
   const welcomeBtn = document.getElementById('welcome-commit-staged');
+  
   if (State.stagedFiles.length === 0) {
     container.innerHTML = '<div class="tree-empty" style="padding:8px 0;">No staged files</div>';
     if (commitBtn) commitBtn.disabled = true; if (welcomeBtn) welcomeBtn.style.display = 'none';
   } else {
-    container.innerHTML = State.stagedFiles.map((f,i) => `<div class="staged-file-row"><span>📄</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(f.name)}</span><span class="remove-staged" onclick="removeStagedFile(${i})" title="Remove">✕</span></div>`).join('');
+    container.innerHTML = State.stagedFiles.map((f,i) => `<div class="staged-file-row"><span>📄</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(f.name)}</span><span class="remove-staged" data-index="${i}" title="Remove">✕</span></div>`).join('');
     if (commitBtn) commitBtn.disabled = false; if (welcomeBtn) welcomeBtn.style.display = 'inline-flex';
+    
+    // Safe event binding
+    container.querySelectorAll('.remove-staged').forEach(btn => {
+      btn.onclick = (e) => removeStagedFile(parseInt(e.target.dataset.index, 10));
+    });
   }
 }
 function removeStagedFile(index) { State.stagedFiles.splice(index,1); renderStagedFiles(); UI.toast('Staged file removed','','info'); }
@@ -1003,11 +1261,13 @@ function getFolderPaths(tree=null) {
   function walk(nodes, prefix) { for (const node of nodes) { if (node.type==='tree') { const path = prefix?`${prefix}/${node.name}`:node.name; folders.push(path); if (node.children && node.children.length>0) walk(node.children, path); } } }
   walk(tree, ''); return folders;
 }
+
 function showNewFileModal() {
   State.newFileTab = 'upload'; State.uploadedFileData = null;
   const existing = document.getElementById('newfile-overlay'); if (existing) existing.remove();
   const folders = getFolderPaths();
   const folderOptions = folders.map(f => `<option value="${escapeHtml(f)}" ${f===''?'selected':''}>${f===''?'📁 / (root)':'📁 '+escapeHtml(f)}</option>`).join('');
+  
   const overlay = document.createElement('div'); overlay.className = 'modal-overlay'; overlay.id = 'newfile-overlay';
   overlay.innerHTML = `
     <div class="modal" style="max-width:620px;">
@@ -1022,7 +1282,7 @@ function showNewFileModal() {
           <button class="tab-btn" id="tab-btn-paste" onclick="switchNewFileTab('paste')">📋 Paste Content</button>
         </div>
         <div class="tab-panel active" id="tab-panel-upload">
-          <div class="drop-zone" id="drop-zone" onclick="document.getElementById('nf-file-input').click()"><div class="drop-zone-icon">📂</div><div class="drop-zone-text">Click to browse or drag & drop a file here</div><div class="drop-zone-hint">Any file type supported — max 5 MB</div></div>
+          <div class="drop-zone" id="drop-zone" onclick="document.getElementById('nf-file-input').click()"><div class="drop-zone-icon">📂</div><div class="drop-zone-text">Click to browse or drag & drop a file here</div><div class="drop-zone-hint">Any file type supported — max ${MAX_FILE_SIZE/(1024*1024)} MB</div></div>
           <input type="file" id="nf-file-input" style="display:none;" onchange="handleFileSelect(event)" />
           <div id="nf-file-info" style="margin-top:8px;"></div><div id="nf-content-preview" style="margin-top:8px;"></div>
         </div>
@@ -1038,14 +1298,17 @@ function showNewFileModal() {
     </div>`;
   document.body.appendChild(overlay);
   overlay.addEventListener('click', e => { if (e.target === overlay) closeNewFileModal(); });
+  
   const dropZone = document.getElementById('drop-zone');
   dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
   dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
   dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('drag-over'); const file = e.dataTransfer.files[0]; if (file) processUploadedFile(file); });
+  
   const pasteArea = document.getElementById('nf-paste-content');
   if (pasteArea) pasteArea.addEventListener('input', () => { document.getElementById('nf-char-count').textContent = `${pasteArea.value.length} characters`; });
   setTimeout(() => { const fnInput = document.getElementById('nf-filename'); if (fnInput) fnInput.focus(); }, 300);
 }
+
 function closeNewFileModal() { const overlay = document.getElementById('newfile-overlay'); if (overlay) overlay.remove(); State.uploadedFileData = null; }
 function switchNewFileTab(tab) {
   State.newFileTab = tab;
@@ -1055,33 +1318,38 @@ function switchNewFileTab(tab) {
   document.getElementById('tab-panel-paste').classList.toggle('active', tab==='paste');
 }
 function handleFileSelect(event) { const file = event.target.files[0]; if (file) processUploadedFile(file); }
+
 function processUploadedFile(file) {
-  if (file.size > 5*1024*1024) { UI.toast('File too large','Maximum file size is 5 MB.','error'); return; }
+  if (file.size > MAX_FILE_SIZE) { UI.toast('File too large',`Maximum file size is ${MAX_FILE_SIZE/(1024*1024)} MB. Your file is ${(file.size/(1024*1024)).toFixed(2)} MB.`,'error'); return; }
   State.uploadedFileData = { name: file.name, size: file.size, content: null };
   document.getElementById('nf-file-info').innerHTML = `<div class="file-selected-info"><span>📄</span><span><strong>${escapeHtml(file.name)}</strong> — ${(file.size/1024).toFixed(1)} KB</span><span class="remove-file" onclick="clearUploadedFile()">✕</span></div>`;
+  
   const reader = new FileReader();
   reader.onload = (e) => {
     State.uploadedFileData.content = e.target.result;
     const previewEl = document.getElementById('nf-content-preview');
     const text = e.target.result; const preview = typeof text==='string' ? text.slice(0,500) : '[Binary file]';
     previewEl.innerHTML = `<div class="content-preview-label">Content Preview</div><div class="content-preview">${escapeHtml(preview)}${typeof text==='string' && text.length>500?'\n...(truncated)':''}</div>`;
-    const fnInput = document.getElementById('nf-filename'); if (fnInput && !fnInput.value.trim()) { fnInput.value = file.name; }
+    const fnInput = document.getElementById('nf-filename'); if (fnInput && !fnInput.value.trim()) fnInput.value = file.name;
   };
+  reader.onerror = () => { UI.toast('Read Error','Failed to read file. Try pasting content instead.','error'); clearUploadedFile(); };
   reader.readAsText(file);
 }
+
 function clearUploadedFile() { State.uploadedFileData = null; document.getElementById('nf-file-info').innerHTML = ''; document.getElementById('nf-content-preview').innerHTML = ''; document.getElementById('nf-file-input').value = ''; }
+
 async function submitNewFile() {
   if (!State.githubToken || !State.githubUser || !State.githubRepo) { UI.toast('No repository','Please configure your repository in Settings first.','error'); return; }
   const folderSelect = document.getElementById('nf-folder'); const folder = folderSelect ? folderSelect.value : '';
   const filenameInput = document.getElementById('nf-filename'); let rawName = filenameInput ? filenameInput.value.trim() : '';
-  let fullPath;
-  if (rawName.includes('/')) fullPath = rawName;
-  else if (folder && folder!=='') fullPath = folder+'/'+rawName;
-  else fullPath = rawName;
-  if (!fullPath) { UI.toast('File name required','Please enter a file name.','warning'); return; }
+  if (!rawName) { UI.toast('File name required','Please enter a file name.','warning'); return; }
+  
+  let fullPath = rawName.includes('/') ? rawName : (folder && folder !== '') ? `${folder}/${rawName}` : rawName;
+  
   let content = '';
   if (State.newFileTab === 'upload') { if (!State.uploadedFileData || !State.uploadedFileData.content) { UI.toast('No file selected','Please upload a file first.','warning'); return; } content = State.uploadedFileData.content; }
   else { const pasteArea = document.getElementById('nf-paste-content'); content = pasteArea ? pasteArea.value : ''; if (!content.trim()) { UI.toast('No content','Please paste some content for the file.','warning'); return; } }
+  
   State.stagedFiles.push({ name: fullPath, content: content });
   closeNewFileModal(); renderStagedFiles();
   UI.toast('File staged', `"${fullPath}" added to local staged files. Use /commit-staged or click "Commit Staged" to push to GitHub.`,'success');
@@ -1097,19 +1365,24 @@ function showCreateBranchModal() {
   document.body.appendChild(overlay);
   overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
 }
+
 async function doCreateBranch() {
   const name = document.getElementById('new-branch-name').value.trim(); const from = document.getElementById('new-branch-from').value;
-  if (!name) { UI.toast('Branch name required','','warning'); return; }
+  if (!name) { UI.toast('Branch name required','Please enter a branch name.','warning'); return; }
+  if (!isValidBranchName(name)) { UI.toast('Invalid branch name', 'Branch name must contain only alphanumeric characters, dashes, underscores, and forward slashes. Cannot start with dash or dot.', 'warning'); return; }
+  
   document.querySelector('.modal-overlay').remove();
   try { await GitHub.createBranch(name, from); UI.toast('Branch created',`${name} from ${from}`,'success'); await syncRepo(true); State.currentBranch = name; UI.renderBranches(); Storage.save(); addMessage('system',`✅ Branch **${name}** created from **${from}**`); }
-  catch(e) { UI.toast('Failed to create branch', e.message, 'error'); }
+  catch(e) { UI.toast('Failed to create branch', e.message, 'error'); Terminal.log('err', `Branch creation failed: ${e.message}`); }
 }
 
 // ============================================================
 // ===== SETTINGS MODAL =====
 // ============================================================
 let settingsTab = 'ai';
-function showSettings(tab='ai') { settingsTab = tab; if (document.getElementById('settings-overlay')) document.getElementById('settings-overlay').remove();
+function showSettings(tab='ai') { 
+  settingsTab = tab; 
+  if (document.getElementById('settings-overlay')) document.getElementById('settings-overlay').remove();
   const overlay = document.createElement('div'); overlay.className = 'modal-overlay'; overlay.id = 'settings-overlay';
   overlay.innerHTML = `<div class="modal" style="max-width:600px;"><div class="modal-header"><div class="modal-title">⚙ Settings</div><button class="modal-close" onclick="closeSettings()">✕</button></div><div class="modal-body" style="padding:16px 20px;"><div class="settings-layout"><div class="settings-sidebar"><div class="settings-nav"><div class="settings-nav-item ${settingsTab==='ai'?'active':''}" onclick="switchSettingsTab('ai')">🤖 AI Provider</div><div class="settings-nav-item ${settingsTab==='repo'?'active':''}" onclick="switchSettingsTab('repo')">📦 Repository</div><div class="settings-nav-item ${settingsTab==='security'?'active':''}" onclick="switchSettingsTab('security')">🔒 Security</div></div></div><div class="settings-content" id="settings-content">${renderSettingsContent(settingsTab)}</div></div></div><div class="modal-footer"><button class="btn-secondary" onclick="closeSettings()">Cancel</button><button class="btn-primary" onclick="saveSettings()">Save Settings</button></div></div>`;
   document.body.appendChild(overlay);
@@ -1135,76 +1408,77 @@ function closeSettings() { document.getElementById('settings-overlay')?.remove()
 function clearAllCredentials() { if (!confirm('Clear all credentials? This will log you out.')) return; Storage.clear(); State.apiKey=''; State.githubToken=''; State.githubUser=''; State.githubRepo=''; State.provider='gemini'; State.aiModel=''; State.connected=false; UI.updateStatus(false,'Not connected'); document.getElementById('repo-pill-text').textContent='No repo connected'; closeSettings(); UI.toast('Cleared','All credentials removed','success'); }
 
 // ============================================================
-// ===== TERMINAL TOGGLE =====
+// ===== TERMINAL TOGGLE & RESIZER =====
 // ============================================================
 function toggleTerminal(forceOpen) { const wrapper = document.getElementById('terminal-wrapper'); const btn = document.getElementById('terminal-toggle'); State.terminalOpen = forceOpen !== undefined ? forceOpen : !State.terminalOpen; wrapper.classList.toggle('open', State.terminalOpen); btn.classList.toggle('terminal-open', State.terminalOpen); btn.textContent = State.terminalOpen ? '▾ LOGS' : '▸ LOGS'; if (State.terminalOpen) document.getElementById('terminal-output').scrollTop = document.getElementById('terminal-output').scrollHeight; }
 function clearTerminal() { Terminal.clear(); }
 
-// ============================================================
-// ===== RESIZER =====
-// ============================================================
 (function initResizer() {
   const resizer = document.getElementById('resizer'); const sidebar = document.getElementById('sidebar');
   let dragging = false, startX = 0, startW = 0;
-  resizer.addEventListener('mousedown', e => { dragging=true; startX=e.clientX; startW=sidebar.offsetWidth; resizer.classList.add('dragging'); document.body.style.cursor='col-resize'; document.body.style.userSelect='none'; });
-  document.addEventListener('mousemove', e => { if (!dragging) return; sidebar.style.width = Math.max(160, Math.min(500, startW + e.clientX - startX)) + 'px'; });
-  document.addEventListener('mouseup', () => { if (!dragging) return; dragging=false; resizer.classList.remove('dragging'); document.body.style.cursor=''; document.body.style.userSelect=''; });
+  const onMove = (e) => { if (!dragging) return; sidebar.style.width = Math.max(160, Math.min(500, startW + e.clientX - startX)) + 'px'; };
+  const onUp = () => { if (!dragging) return; dragging=false; resizer.classList.remove('dragging'); document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); document.body.style.cursor=''; document.body.style.userSelect=''; };
+  resizer.addEventListener('mousedown', e => { dragging=true; startX=e.clientX; startW=sidebar.offsetWidth; resizer.classList.add('dragging'); document.body.style.cursor='col-resize'; document.body.style.userSelect='none'; document.addEventListener('mousemove', onMove); document.addEventListener('mouseup', onUp); });
 })();
 document.getElementById('sidebar-toggle').addEventListener('click', () => { const sidebar = document.getElementById('sidebar'); State.sidebarOpen = !State.sidebarOpen; if (window.innerWidth <= 768) sidebar.classList.toggle('mobile-open', State.sidebarOpen); else sidebar.classList.toggle('collapsed', !State.sidebarOpen); });
 
 // ============================================================
-// ===== INPUT HANDLING =====
+// ===== INPUT HANDLING & MARKDOWN =====
 // ============================================================
 const chatInput = document.getElementById('chat-input');
 chatInput.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } });
 chatInput.addEventListener('input', () => autoResizeInput(chatInput));
 function autoResizeInput(el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 140) + 'px'; }
 
-// ============================================================
-// ===== MARKDOWN =====
-// ============================================================
 function renderMarkdown(text) {
   if (!text) return ''; let html = escapeHtml(text);
-  html = html.replace(/```(\w*)\n?([\s\S]*?)```/g, (_, lang, code) => `<pre><code class="lang-${lang}">${code.trim()}</code></pre>`);
-  html = html.replace(/`([^`]+)`/g, '<code>$1</code>'); html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-  html = html.replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<em>$1</em>'); html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
-  html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>'); html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
-  html = html.replace(/^---$/gm, '<hr>'); html = html.replace(/^&gt; (.+)$/gm, '<blockquote>$1</blockquote>');
-  html = html.replace(/^[\-\*] (.+)$/gm, '<li>$1</li>'); html = html.replace(/(<li>[\s\S]+?<\/li>)/g, '<ul>$1</ul>');
-  html = html.replace(/^\d+\. (.+)$/gm, '<li>$1</li>'); html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+  html = html.replace(/```(\w*)\n?([\s\S]*?)```/g, (_, lang, code) => `<pre><code class="lang-${escapeHtml(lang)}">${escapeHtml(code.trim())}</code></pre>`);
+  html = html.replace(/`([^`]+)`/g, (match, code) => `<code>${escapeHtml(code)}</code>`); 
+  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  html = html.replace(/\*([^*\n]+)\*/g, '<em>$1</em>'); 
+  html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+  html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>'); 
+  html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
+  html = html.replace(/^---$/gm, '<hr>'); 
+  html = html.replace(/^&gt; (.+)$/gm, '<blockquote>$1</blockquote>');
+  html = html.replace(/^[\-\*] (.+)$/gm, '<li>$1</li>'); 
+  html = html.replace(/(<li>[\s\S]+?<\/li>)/g, '<ul>$1</ul>');
+  html = html.replace(/^\d+\. (.+)$/gm, '<li>$1</li>'); 
+  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
   html = html.replace(/\n(?!<\/?(ul|ol|li|h[123]|pre|blockquote|hr))/g, '<br>');
   return html;
 }
 
 // ============================================================
-// ===== UTILS =====
+// ===== KEYBOARD SHORTCUTS & DRAG & DROP =====
 // ============================================================
-function escapeHtml(str) { if (typeof str !== 'string') return ''; return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
-function getFileIcon(name) { const ext = name.split('.').pop()?.toLowerCase(); const icons = { js:'🟨',ts:'🔷',jsx:'⚛',tsx:'⚛',html:'🌐',css:'🎨',scss:'🎨',sass:'🎨',json:'📋',md:'📝',txt:'📄',py:'🐍',rb:'💎',go:'🔵',rs:'🦀',java:'☕',kt:'🔷',swift:'🍊',php:'🐘',sh:'⬛',yaml:'⚙',yml:'⚙',toml:'⚙',env:'🔒',gitignore:'👻',png:'🖼',jpg:'🖼',jpeg:'🖼',svg:'🖼',gif:'🖼',pdf:'📕',zip:'📦',tar:'📦',dockerfile:'🐳',lock:'🔒' }; return icons[ext] || (name.startsWith('.')?'⚙':'📄'); }
-
-// ============================================================
-// ===== KEYBOARD SHORTCUTS =====
-// ============================================================
-document.addEventListener('keydown', e => {
+const handleKeyboardShortcuts = (e) => {
   if ((e.ctrlKey||e.metaKey) && e.key === 'k') { e.preventDefault(); document.getElementById('chat-input').focus(); }
   if ((e.ctrlKey||e.metaKey) && e.shiftKey && e.key === 'L') { e.preventDefault(); toggleTerminal(); }
   if ((e.ctrlKey||e.metaKey) && e.key === ',') { e.preventDefault(); showSettings('ai'); }
   if ((e.ctrlKey||e.metaKey) && e.key === 'n') { e.preventDefault(); showNewFileModal(); }
   if (e.key === 'Escape') { const overlay = document.querySelector('.modal-overlay'); if (overlay && overlay.id !== 'settings-overlay') overlay.remove(); }
-});
+};
+document.addEventListener('keydown', handleKeyboardShortcuts);
 
-// ============================================================
-// ===== DRAG & DROP GLOBAL =====
-// ============================================================
 const dragOverlay = document.getElementById('drag-overlay'); let dragCounter = 0;
-document.addEventListener('dragenter', e => { e.preventDefault(); dragCounter++; if (dragCounter===1) dragOverlay.style.display='flex'; });
-document.addEventListener('dragleave', e => { e.preventDefault(); dragCounter--; if (dragCounter<=0) { dragCounter=0; dragOverlay.style.display='none'; } });
-document.addEventListener('dragover', e => e.preventDefault());
-document.addEventListener('drop', e => { e.preventDefault(); dragCounter=0; dragOverlay.style.display='none'; const file = e.dataTransfer.files[0]; if (file) { showNewFileModal(); setTimeout(() => processUploadedFile(file), 400); } });
+const handleDragEnter = (e) => { e.preventDefault(); dragCounter++; if (dragCounter===1) dragOverlay.style.display='flex'; };
+const handleDragLeave = (e) => { e.preventDefault(); dragCounter--; if (dragCounter<=0) { dragCounter=0; dragOverlay.style.display='none'; } };
+const handleDragOver = (e) => e.preventDefault();
+const handleDrop = (e) => { e.preventDefault(); dragCounter=0; dragOverlay.style.display='none'; const file = e.dataTransfer.files[0]; if (file) { showNewFileModal(); setTimeout(() => processUploadedFile(file), 400); } };
+document.addEventListener('dragenter', handleDragEnter);
+document.addEventListener('dragleave', handleDragLeave);
+document.addEventListener('dragover', handleDragOver);
+document.addEventListener('drop', handleDrop);
 
 // ============================================================
-// ===== RESTORE CHAT HISTORY =====
+// ===== ONLINE/OFFLINE & RESTORE CHAT =====
 // ============================================================
+const handleOnline = () => { Terminal.log('ok', 'Connection restored'); UI.toast('Back online', 'Your connection has been restored.', 'success', 3000); };
+const handleOffline = () => { Terminal.log('warn', 'Connection lost'); UI.toast('Offline', 'You are currently offline. Some features may not work.', 'warning', 5000); };
+window.addEventListener('online', handleOnline);
+window.addEventListener('offline', handleOffline);
+
 function restoreChatHistory() {
   const history = State.chatHistory; if (!history || history.length===0) return;
   const chatArea = document.getElementById('chat-area'); const welcome = document.getElementById('welcome'); if (welcome) welcome.remove();
@@ -1214,20 +1488,25 @@ function restoreChatHistory() {
 }
 
 // ============================================================
-// ===== INIT =====
+// ===== INIT (WITH DOMContentLoaded + OFFLINE CHECK) =====
 // ============================================================
 async function init() {
   Terminal.log('info', `GitMoire v${APP_VERSION} initializing...`);
+  if (!navigator.onLine) { Terminal.log('warn', 'Application started in offline mode'); UI.toast('Offline Mode', 'You are currently offline. Some features may not work.', 'warning', 5000); }
+  
   const loaded = Storage.load();
   if (loaded) { Terminal.log('ok','Session loaded from storage'); UI.updateExpiryBadge(); }
   if (State.chatHistory.length > 0) restoreChatHistory();
+  
   UI.renderContextFiles(); UI.renderInputContextTags(); renderStagedFiles();
   if (State.githubToken && State.githubUser && State.githubRepo) { UI.updateStatus(false,'Syncing...'); await syncRepo(true); Terminal.log('ok','Auto-sync complete'); }
   else { UI.updateStatus(false,'Not connected'); Terminal.log('warn','No repo configured — open Settings to get started'); }
   if (!loaded) setTimeout(() => UI.toast('Welcome to GitMoire!','Open Settings (⚙) to connect your GitHub repo and AI provider.','info',6000), 500);
   Terminal.log('ok','GitMoire ready');
 }
-init();
+
+if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', init); } 
+else { init(); }
 </script>
 </body>
 </html>
