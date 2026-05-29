@@ -876,17 +876,27 @@ const Executor = {
     switch(op.op) {
       case 'read': { 
         const data = await GitHub.getFileContent(op.path); 
-        // ✅ Use safe base64Decode
         const content = data.content ? base64Decode(data.content) : '';
         return { content, sha: data.sha }; 
       }
-      case 'create': { 
-        let existingFile = null;
-        try { existingFile = await GitHub.getFileContent(op.path); } 
-        catch (e) { if (!e.message.includes('404') && !e.message.includes('not found')) throw new Error(`Failed to check if file exists: ${e.message}`); }
-        if (existingFile) throw new Error(`File already exists: ${op.path}. Use update operation instead.`);
-        return await GitHub.createOrUpdateFile(op.path, op.content||'', commitMsg); 
-      }
+case 'create': { 
+  let existingFile = null;
+  try { 
+    existingFile = await GitHub.getFileContent(op.path); 
+  } catch (e) { 
+    const msg = e.message.toLowerCase();
+    const isNotFound = msg.includes('404') || msg.includes('not found');
+    if (!isNotFound) {
+      // Only throw if it's a different error (network, auth, etc.)
+      throw new Error(`Failed to check if file exists: ${e.message}`); 
+    }
+    Terminal.log('info', `✓ File doesn't exist (expected for create): ${op.path}`);
+  }
+  if (existingFile) {
+    throw new Error(`File already exists: ${op.path}. Use update operation instead.`);
+  }
+  return await GitHub.createOrUpdateFile(op.path, op.content||'', commitMsg); 
+}
       case 'update': { 
         let sha = null;
         try { const ex = await GitHub.getFileContent(op.path); sha = ex.sha; } 
