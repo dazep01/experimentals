@@ -2101,31 +2101,103 @@
   let installButton = null;
 
   function initPWAInstall() {
+    // ===== PWA DIAGNOSTIC: Log semua status installability =====
+    console.log('[ForgeEdit PWA] === Diagnostic Start ===');
+    console.log('[ForgeEdit PWA] Protocol:', location.protocol);
+    console.log('[ForgeEdit PWA] Hostname:', location.hostname);
+    console.log('[ForgeEdit PWA] SW supported:', 'serviceWorker' in navigator);
+    console.log('[ForgeEdit PWA] Is HTTPS:', location.protocol === 'https:' || location.hostname === 'localhost');
+
+    // Cek apakah sudah terinstall
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+    console.log('[ForgeEdit PWA] Is standalone (installed):', isStandalone);
+
+    if (isStandalone) {
+      console.log('[ForgeEdit PWA] App is already installed (standalone mode)');
+      return; // Tidak perlu install button jika sudah terinstall
+    }
+
     // Listen for beforeinstallprompt event
+    // PENTING: Event ini hanya di-fire jika Chrome menganggap app installable
+    // Kriteria: HTTPS + SW aktif dengan fetch handler + manifest valid + icons accessible
     window.addEventListener('beforeinstallprompt', (e) => {
-      console.log('[ForgeEdit] beforeinstallprompt fired');
+      console.log('[ForgeEdit PWA] ✅ beforeinstallprompt FIRED! App is installable.');
+      console.log('[ForgeEdit PWA] Platforms:', e.platforms);
       // Prevent the mini-infobar from appearing on mobile
       e.preventDefault();
       // Stash the event so it can be triggered later
       deferredPrompt = e;
       // Show the install button
       showInstallButton();
-      // Update installability status
       showToast('ForgeEdit Pro can be installed!', 'success', 4000);
     });
 
     // Listen for app installed event
     window.addEventListener('appinstalled', () => {
-      console.log('[ForgeEdit] App installed successfully');
+      console.log('[ForgeEdit PWA] ✅ App installed successfully!');
       deferredPrompt = null;
       hideInstallButton();
       showToast('ForgeEdit Pro installed successfully!', 'success', 5000);
     });
 
-    // Check if already installed (standalone mode)
-    if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true) {
-      console.log('[ForgeEdit] App is already installed (standalone mode)');
-    }
+    // Diagnostic: cek manifest setelah delay
+    setTimeout(async () => {
+      try {
+        if (navigator.serviceWorker.controller) {
+          console.log('[ForgeEdit PWA] ✅ SW is controlling this page');
+        } else {
+          console.warn('[ForgeEdit PWA] ⚠️ SW is NOT controlling this page! Refresh the page.');
+        }
+
+        // Cek manifest
+        const manifestLink = document.querySelector('link[rel="manifest"]');
+        if (manifestLink) {
+          const resp = await fetch(manifestLink.href);
+          const manifest = await resp.json();
+          console.log('[ForgeEdit PWA] Manifest loaded:', manifest.name);
+          console.log('[ForgeEdit PWA] Manifest icons:', manifest.icons?.length || 0);
+
+          // Cek icon 192x192 dan 512x512 (wajib untuk Chrome installability)
+          const has192 = manifest.icons?.some(i => i.sizes === '192x192');
+          const has512 = manifest.icons?.some(i => i.sizes === '512x512');
+          console.log('[ForgeEdit PWA] Has 192x192 icon:', has192);
+          console.log('[ForgeEdit PWA] Has 512x512 icon:', has512);
+
+          // Cek apakah icon bisa diakses
+          if (has192) {
+            const icon192 = manifest.icons.find(i => i.sizes === '192x192');
+            const iconUrl = new URL(icon192.src, manifestLink.href);
+            const iconResp = await fetch(iconUrl, { method: 'HEAD' });
+            console.log('[ForgeEdit PWA] 192x192 icon accessible:', iconResp.ok, '(' + iconUrl.href + ')');
+          }
+          if (has512) {
+            const icon512 = manifest.icons.find(i => i.sizes === '512x512');
+            const iconUrl = new URL(icon512.src, manifestLink.href);
+            const iconResp = await fetch(iconUrl, { method: 'HEAD' });
+            console.log('[ForgeEdit PWA] 512x512 icon accessible:', iconResp.ok, '(' + iconUrl.href + ')');
+          }
+        } else {
+          console.error('[ForgeEdit PWA] ❌ No manifest link found!');
+        }
+
+        // Cek getInstalledRelatedApps jika tersedia
+        if ('getInstalledRelatedApps' in navigator) {
+          try {
+            const apps = await navigator.getInstalledRelatedApps();
+            console.log('[ForgeEdit PWA] Installed related apps:', apps.length);
+          } catch(e) {}
+        }
+
+        console.log('[ForgeEdit PWA] === Diagnostic End ===');
+        console.log('[ForgeEdit PWA] Jika beforeinstallprompt TIDAK pernah fired:');
+        console.log('[ForgeEdit PWA]   1. Pastikan icons/ folder ada di repository dan file PNG bisa diakses');
+        console.log('[ForgeEdit PWA]   2. Refresh halaman setelah SW pertama kali aktif');
+        console.log('[ForgeEdit PWA]   3. Buka DevTools > Application > Manifest untuk cek error');
+        console.log('[ForgeEdit PWA]   4. Buka DevTools > Application > Service Workers untuk cek status');
+      } catch(err) {
+        console.error('[ForgeEdit PWA] Diagnostic error:', err);
+      }
+    }, 3000);
   }
 
   function showInstallButton() {
@@ -2137,7 +2209,7 @@
     const btn = document.createElement('button');
     btn.id = 'installAppBtn';
     btn.className = 'icon-btn primary';
-    btn.title = 'Install App';
+    btn.title = 'Install App (PWA)';
     btn.setAttribute('aria-label', 'Install ForgeEdit Pro');
     btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>';
     btn.style.cssText = 'animation:pulse-glow 2s ease-in-out infinite;background:var(--success);border-color:var(--success);';
@@ -2165,6 +2237,8 @@
       `;
       document.head.appendChild(style);
     }
+
+    console.log('[ForgeEdit PWA] Install button shown in title bar');
   }
 
   function hideInstallButton() {
@@ -2175,14 +2249,15 @@
 
   async function promptInstall() {
     if (!deferredPrompt) {
-      showToast('Installation not available — try from browser menu', 'warning');
+      // Tidak ada beforeinstallprompt — arahkan user ke menu browser
+      showToast('Install via browser menu: ⋮ > Install ForgeEdit Pro', 'info', 5000);
       return;
     }
     // Show the install prompt
     deferredPrompt.prompt();
     // Wait for the user to respond to the prompt
     const { outcome } = await deferredPrompt.userChoice;
-    console.log('[ForgeEdit] Install prompt outcome:', outcome);
+    console.log('[ForgeEdit PWA] Install prompt outcome:', outcome);
     if (outcome === 'accepted') {
       showToast('Installing ForgeEdit Pro...', 'success');
     } else {
@@ -2198,10 +2273,17 @@
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('./sw.js', { scope: './' }).then((reg) => {
         console.log('[ForgeEdit] Service Worker registered:', reg.scope);
+        console.log('[ForgeEdit] SW active:', !!reg.active);
+        console.log('[ForgeEdit] SW installing:', !!reg.installing);
+        console.log('[ForgeEdit] SW waiting:', !!reg.waiting);
 
-        // Check if SW is active
-        if (reg.active) {
-          console.log('[ForgeEdit] Service Worker is active');
+        // PENTING: Jika SW baru saja aktif tapi belum controlling page,
+        // user perlu refresh agar Chrome bisa detect installability
+        if (!navigator.serviceWorker.controller) {
+          console.warn('[ForgeEdit PWA] ⚠️ SW terdaftar tapi BELUM controlling page ini.');
+          console.warn('[ForgeEdit PWA] Refresh halaman agar SW mengambil kontrol dan install icon muncul.');
+        } else {
+          console.log('[ForgeEdit PWA] ✅ SW is controlling this page');
         }
 
         // Check for updates periodically (every 60 minutes)
@@ -2218,16 +2300,22 @@
               showToast('Update available! Close and reopen to update.', 'info', 8000);
             } else if (newWorker.state === 'activated') {
               console.log('[ForgeEdit] New SW activated');
+              // Jika SW baru saja activated, reload agar Chrome detect installability
+              if (!navigator.serviceWorker.controller) {
+                console.log('[ForgeEdit PWA] SW activated but not controlling — will reload...');
+                setTimeout(() => location.reload(), 500);
+              }
             }
           });
         });
       }).catch((err) => {
         console.warn('[ForgeEdit] SW registration failed:', err);
-        // Show helpful message about HTTPS requirement
         if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
           console.warn('[ForgeEdit] PWA requires HTTPS. Current protocol:', location.protocol);
         }
       });
+    } else {
+      console.warn('[ForgeEdit PWA] Service Worker not supported in this browser');
     }
   }
 
