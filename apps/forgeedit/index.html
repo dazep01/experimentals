@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+    <meta name="description" content="ForgeEdit Pro — Editor Multifungsi dengan IndexedDB, Folder Tree, dan Fitur Lengkap">
+    <meta name="theme-color" content="#7c3aed">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="ForgeEdit">
+    <meta name="application-name" content="ForgeEdit Pro">
+    <meta name="msapplication-TileColor" content="#7c3aed">
+    <meta name="msapplication-TileImage" content="./icons/icon-144x144.png">
+    <meta name="msapplication-starturl" content="./">
+    <title>ForgeEdit Pro — Editor Multifungsi</title>
+    
+    <link rel="manifest" href="./manifest.json">
+    <link rel="icon" type="image/svg+xml" href="./icons/icon.svg">
+    <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192x192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="./icons/icon-512x512.png">
+    <link rel="apple-touch-icon" href="./icons/icon-192x192.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="./icons/icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="192x192" href="./icons/icon-192x192.png">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500;600&family=Cascadia+Code:wght@400;600&display=swap" rel="stylesheet">
+    
+    <!-- CodeMirror 5 Core -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/dialog/dialog.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/foldgutter.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/show-hint.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/scroll/simplescrollbars.min.css">
+    
+    <!-- Themes -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/material-darker.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/dracula.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/eclipse.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/idea.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/monokai.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/one-dark.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/solarized.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/midnight.min.css">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/mode/loadmode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/meta.min.js"></script>
+    
+    <!-- Core Modes -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/xml/xml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/css/css.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/htmlmixed/htmlmixed.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/markdown/markdown.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/yaml/yaml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/yaml-frontmatter/yaml-frontmatter.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/json/json.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/php/php.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/sql/sql.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/shell/shell.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/sass/sass.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/less/less.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/dockerfile/dockerfile.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/nginx/nginx.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/go/go.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/rust/rust.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/ruby/ruby.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/clike/clike.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/velocity/velocity.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/properties/properties.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/toml/toml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/diff/diff.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/lua/lua.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/perl/perl.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/powershell/powershell.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/vb/vb.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/vbscript/vbscript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/twig/twig.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/handlebars/handlebars.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/jsx/jsx.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/coffeescript/coffeescript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/livescript/livescript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/stylus/stylus.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/pug/pug.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/htmlembedded/htmlembedded.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/gfm/gfm.min.js"></script>
+    
+    <!-- Addons -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/dialog/dialog.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/search/search.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/search/searchcursor.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/search/jump-to-line.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/search/matchesonscrollbar.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/search/match-highlighter.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchtags.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/trailingspace.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/continuelist.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/selection/active-line.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/selection/mark-selection.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/comment/comment.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/comment/continuecomment.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/wrap/hardwrap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/scroll/simplescrollbars.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/scroll/scrollpastend.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/foldcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/foldgutter.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/brace-fold.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/indent-fold.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/xml-fold.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/markdown-fold.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/comment-fold.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/display/placeholder.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/display/panel.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/display/fullscreen.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/display/fullscreen.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/show-hint.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/anyword-hint.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/xml-hint.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/html-hint.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/css-hint.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/javascript-hint.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/sql-hint.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/keymap/sublime.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/keymap/vim.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/keymap/emacs.min.js"></script>
+    
+    <!-- External Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/markdown-it/13.0.1/markdown-it.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
+    <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+<div class="app-container">
+    <header class="title-bar">
+        <div class="title-bar-left">
+            <div class="logo" id="logoBtn">
+                <div class="logo-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/><line x1="12" y1="2" x2="12" y2="22"/></svg></div>
+                <span>ForgeEdit Pro</span>
+            </div>
+            <div class="breadcrumb" id="breadcrumb"></div>
+            <div class="file-tabs" id="fileTabs"></div>
+        </div>
+        <div class="title-bar-right">
+            <button class="icon-btn" id="toggleSidebar" title="Toggle Sidebar (Ctrl+B)" aria-label="Toggle sidebar"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/></svg></button>
+            <button class="icon-btn" id="toggleZen" title="Zen Mode (Ctrl+Shift+Z)" aria-label="Zen mode"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg></button>
+            <button class="icon-btn" id="openSettings" title="Settings (Ctrl+,)" aria-label="Settings"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.72v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></button>
+            <button class="icon-btn" id="openCommandPalette" title="Command Palette (Ctrl+K)" aria-label="Open command palette"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></button>
+            <button class="icon-btn primary" id="newFile" title="New File (Ctrl+N)" aria-label="New file"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M12 18v-6"/><path d="m9 15 3 3 3-3"/></svg></button>
+        </div>
+    </header>
+    <main class="main-content">
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+        <aside class="sidebar collapsed" id="sidebar">
+            <div class="sidebar-header">
+                <span class="sidebar-title">Explorer</span>
+                <div class="sidebar-search">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                    <input type="text" id="sidebarSearch" placeholder="Search files..." autocomplete="off">
+                </div>
+                <div class="sidebar-actions">
+                    <button class="icon-btn" id="newFolder" title="New Folder" aria-label="New folder"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/></svg></button>
+                    <button class="icon-btn" id="collapseAll" title="Collapse All" aria-label="Collapse all"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg></button>
+                </div>
+            </div>
+            <div class="sidebar-content"><ul class="file-tree" id="fileTree"></ul></div>
+        </aside>
+        <div class="editor-area">
+            <div class="toolbar" id="toolbar">
+                <div class="toolbar-group">
+                    <button class="toolbar-btn" id="btnUndo" title="Undo (Ctrl+Z)" aria-label="Undo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg><span>Undo</span></button>
+                    <button class="toolbar-btn" id="btnRedo" title="Redo (Ctrl+Y)" aria-label="Redo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7"/></svg><span>Redo</span></button>
+                </div>
+                <div class="toolbar-group">
+                    <button class="toolbar-btn" id="btnCut" title="Cut (Ctrl+X)" aria-label="Cut"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" x2="8.12" y1="4" y2="15.88"/><line x1="14.47" x2="20" y1="14.48" y2="20"/><line x1="8.12" x2="12" y1="8.12" y2="12"/></svg><span>Cut</span></button>
+                    <button class="toolbar-btn" id="btnCopy" title="Copy (Ctrl+C)" aria-label="Copy"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><span>Copy</span></button>
+                    <button class="toolbar-btn" id="btnPaste" title="Paste (Ctrl+V)" aria-label="Paste"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg><span>Paste</span></button>
+                </div>
+                <div class="toolbar-group">
+                    <button class="toolbar-btn" id="btnSave" title="Save (Ctrl+S)" aria-label="Save"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h10.2Z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"/><path d="M12 21v-13"/></svg><span>Save</span></button>
+                    <button class="toolbar-btn" id="btnFind" title="Find (Ctrl+F)" aria-label="Find"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><span>Find</span></button>
+                    <button class="toolbar-btn" id="btnExport" title="Export" aria-label="Export"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg><span>Export</span></button>
+                </div>
+                <div class="toolbar-group" id="formatToolbar" style="display:none;">
+                    <button class="toolbar-btn" id="btnBold" title="Bold (Ctrl+B)" aria-label="Bold"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h8a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/><path d="M6 12h9a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/></svg></button>
+                    <button class="toolbar-btn" id="btnItalic" title="Italic (Ctrl+I)" aria-label="Italic"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" x2="10" y1="4" y2="4"/><line x1="14" x2="5" y1="20" y2="20"/><line x1="15" x2="9" y1="4" y2="20"/></svg></button>
+                    <button class="toolbar-btn" id="btnHeading" title="Heading" aria-label="Heading"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h8"/><path d="M4 18V6"/><path d="M12 18V6"/><path d="m17 12 3-2v8"/></svg></button>
+                    <button class="toolbar-btn" id="btnLink" title="Link" aria-label="Link"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></button>
+                    <button class="toolbar-btn" id="btnImage" title="Image" aria-label="Image"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg></button>
+                    <button class="toolbar-btn" id="btnCode" title="Code" aria-label="Code"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></button>
+                    <button class="toolbar-btn" id="btnQuote" title="Quote" aria-label="Quote"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V21z"/><path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.75c0 2.25.25 4-2.75 4v3z"/></svg></button>
+                    <button class="toolbar-btn" id="btnList" title="List" aria-label="List"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/></svg></button>
+                    <button class="toolbar-btn" id="btnTable" title="Table" aria-label="Table"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M3 15h18"/><path d="M9 3v18"/></svg></button>
+                </div>
+                <div class="toolbar-group" id="viewToolbar" style="display:none;">
+                    <button class="toolbar-btn" id="btnPreview" title="Toggle Preview" aria-label="Toggle preview"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg><span>Preview</span></button>
+                    <button class="toolbar-btn" id="btnSplit" title="Split View" aria-label="Split view"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><line x1="12" x2="12" y1="3" y2="21"/></svg><span>Split</span></button>
+                </div>
+                <div class="toolbar-group" id="codeToolbar" style="display:none;">
+                    <button class="toolbar-btn" id="btnFormat" title="Format Code" aria-label="Format code"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V4h16v3"/><path d="M9 20h6"/><path d="M12 4v16"/></svg><span>Format</span></button>
+                    <button class="toolbar-btn" id="btnMinify" title="Minify" aria-label="Minify"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14l6-6 6 6"/><path d="M4 20l6-6 6 6"/></svg><span>Minify</span></button>
+                </div>
+            </div>
+            <div class="editor-container" id="editorContainer">
+                <div class="welcome-screen" id="welcomeScreen">
+                    <div class="welcome-logo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/><line x1="12" y1="2" x2="12" y2="22"/></svg></div>
+                    <h1 class="welcome-title">ForgeEdit Pro</h1>
+                    <p class="welcome-subtitle">Editor multifungsi dengan IndexedDB, folder tree, zen mode, dan fitur lengkap untuk produktivitas maksimal</p>
+                    <div class="welcome-actions">
+                        <button class="welcome-btn primary" id="welcomeNewFile"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M12 18v-6"/><path d="m9 15 3 3 3-3"/></svg>New File</button>
+                        <button class="welcome-btn" id="welcomeOpenFile"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg>Open File</button>
+                        <button class="welcome-btn" id="welcomeOpenFolder"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/></svg>Open Folder</button>
+                    </div>
+                    <div class="recent-files" id="recentFiles" style="display:none;">
+                        <div class="recent-files-title"><span>Recent Files</span><button class="btn btn-sm btn-ghost" id="clearAllRecent">Clear All</button></div>
+                        <div id="recentFilesList"></div>
+                    </div>
+                </div>
+                <div class="code-editor-wrapper" id="codeEditorWrapper" style="display:none;"></div>
+                <div class="markdown-wrapper" id="markdownWrapper" style="display:none;">
+                    <div class="split-view" id="splitView">
+                        <div class="split-pane" id="markdownEditorPane">
+                            <div class="markdown-toolbar" id="markdownToolbar">
+                                <button class="toolbar-btn" data-action="bold" title="Bold">B</button>
+                                <button class="toolbar-btn" data-action="italic" title="Italic"><em>I</em></button>
+                                <button class="toolbar-btn" data-action="heading" title="Heading">H</button>
+                                <button class="toolbar-btn" data-action="link" title="Link">&#128279;</button>
+                                <button class="toolbar-btn" data-action="image" title="Image">&#128444;</button>
+                                <button class="toolbar-btn" data-action="code" title="Code">&lt;/&gt;</button>
+                                <button class="toolbar-btn" data-action="quote" title="Quote">&#10077;</button>
+                                <button class="toolbar-btn" data-action="list" title="List">&#9776;</button>
+                                <button class="toolbar-btn" data-action="table" title="Table">&#8862;</button>
+                            </div>
+                        </div>
+                        <div class="split-resize" id="splitResize"></div>
+                        <div class="split-pane" id="markdownPreviewPane">
+                            <div class="markdown-preview" id="markdownPreview"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="image-preview" id="imagePreview" style="display:none;">
+                    <img id="imagePreviewImg" src="" alt="Preview">
+                    <div class="image-preview-info" id="imagePreviewInfo"></div>
+                </div>
+                <div class="find-panel" id="findPanel">
+                    <div class="find-panel-header"><span class="find-panel-title">Find & Replace</span><button class="icon-btn" id="closeFindPanel" style="width:24px;height:24px;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button></div>
+                    <div class="find-panel-row"><input type="text" id="findInput" placeholder="Find..."></div>
+                    <div class="find-panel-row"><input type="text" id="replaceInput" placeholder="Replace..."></div>
+                    <div class="find-panel-options">
+                        <label><input type="checkbox" id="findCaseSensitive"> Case</label>
+                        <label><input type="checkbox" id="findWholeWord"> Word</label>
+                        <label><input type="checkbox" id="findRegex"> Regex</label>
+                    </div>
+                    <div class="find-panel-status" id="findStatus"></div>
+                    <div class="find-panel-buttons">
+                        <button class="find-panel-btn" id="findPrevBtn">&#8593; Prev</button>
+                        <button class="find-panel-btn" id="findNextBtn">&#8595; Next</button>
+                        <button class="find-panel-btn" id="replaceBtn">Replace</button>
+                        <button class="find-panel-btn" id="replaceAllBtn">Replace All</button>
+                    </div>
+                </div>
+            </div>
+            <footer class="status-bar">
+                <div class="status-bar-left">
+                    <div class="status-item" id="statusReady"><span class="status-dot" id="statusDot"></span><span id="statusText">Ready</span></div>
+                    <div class="status-item" id="statusEncoding">UTF-8</div>
+                    <div class="status-item" id="statusLine">Ln1, Col 1</div>
+                    <div class="status-item" id="statusSelection"></div>
+                </div>
+                <div class="status-bar-right">
+                    <div class="status-item" id="statusFileType">Plain Text</div>
+                    <div class="status-item" id="statusLang">ID</div>
+                    <div class="status-item" id="statusSpaces">Spaces: 2</div>
+                    <div class="status-item" id="statusEOL">LF</div>
+                </div>
+            </footer>
+        </div>
+    </main>
+</div>
+
+<div class="command-palette" id="commandPalette">
+    <input type="text" class="command-palette-input" id="commandInput" placeholder="Type a command... (Esc to close)">
+    <div class="command-palette-results" id="commandResults"></div>
+</div>
+
+<div class="context-menu" id="contextMenu"></div>
+
+<div class="drag-overlay" id="dragOverlay">
+    <div class="drag-overlay-content">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+        <div>Drop files here to open</div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="newFileModal">
+    <div class="modal">
+        <div class="modal-header"><h3 class="modal-title">New File</h3><button class="icon-btn" id="closeNewFileModal" aria-label="Close"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button></div>
+        <div class="modal-body">
+            <div class="form-group"><label class="form-label">File Name</label><input type="text" class="form-input" id="newFileName" placeholder="untitled.txt" autocomplete="off"></div>
+            <div class="form-group"><label class="form-label">Location</label><select class="form-input" id="newFileLocation"></select></div>
+            <div class="form-group"><label class="form-label">File Type</label><select class="form-input" id="newFileType"></select></div>
+        </div>
+        <div class="modal-footer"><button class="btn btn-secondary" id="cancelNewFile">Cancel</button><button class="btn btn-primary" id="createNewFile">Create</button></div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="newFolderModal">
+    <div class="modal">
+        <div class="modal-header"><h3 class="modal-title">New Folder</h3><button class="icon-btn" id="closeNewFolderModal" aria-label="Close"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button></div>
+        <div class="modal-body">
+            <div class="form-group"><label class="form-label">Folder Name</label><input type="text" class="form-input" id="newFolderName" placeholder="new-folder" autocomplete="off"></div>
+            <div class="form-group"><label class="form-label">Location</label><select class="form-input" id="newFolderLocation"></select></div>
+        </div>
+        <div class="modal-footer"><button class="btn btn-secondary" id="cancelNewFolder">Cancel</button><button class="btn btn-primary" id="createNewFolder">Create</button></div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="renameModal">
+    <div class="modal">
+        <div class="modal-header"><h3 class="modal-title">Rename</h3><button class="icon-btn" id="closeRenameModal" aria-label="Close"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button></div>
+        <div class="modal-body">
+            <div class="form-group"><label class="form-label">New Name</label><input type="text" class="form-input" id="renameInput" autocomplete="off"></div>
+        </div>
+        <div class="modal-footer"><button class="btn btn-secondary" id="cancelRename">Cancel</button><button class="btn btn-primary" id="confirmRename">Rename</button></div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="exportModal">
+    <div class="modal">
+        <div class="modal-header"><h3 class="modal-title">Export File</h3><button class="icon-btn" id="closeExportModal" aria-label="Close"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button></div>
+        <div class="modal-body">
+            <div class="form-group"><label class="form-label">Export Format</label><select class="form-input" id="exportFormat"><option value="html">HTML (.html)</option><option value="md">Markdown (.md)</option><option value="txt">Plain Text (.txt)</option><option value="pdf">PDF (via print)</option></select></div>
+        </div>
+        <div class="modal-footer"><button class="btn btn-secondary" id="cancelExport">Cancel</button><button class="btn btn-primary" id="confirmExport">Export</button></div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="settingsModal">
+    <div class="modal wide">
+        <div class="modal-header"><h3 class="modal-title">Settings</h3><button class="icon-btn" id="closeSettingsModal" aria-label="Close"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button></div>
+        <div class="modal-body">
+            <div class="settings-group">
+                <div class="settings-group-title">Appearance</div>
+                <div class="settings-row"><div><div class="settings-label">Theme</div><div class="settings-desc">Editor color theme</div></div><div class="settings-control"><select class="form-input" id="settingTheme" style="width:160px;"><option value="dark">Dark (Default)</option><option value="light">Light</option><option value="midnight">Midnight</option><option value="ocean">Ocean</option><option value="forest">Forest</option><option value="sunset">Sunset</option></select></div></div>
+                <div class="settings-row"><div><div class="settings-label">Editor Theme</div><div class="settings-desc">CodeMirror color scheme</div></div><div class="settings-control"><select class="form-input" id="settingEditorTheme" style="width:160px;"><option value="material-darker">Material Darker</option><option value="dracula">Dracula</option><option value="monokai">Monokai</option><option value="one-dark">One Dark</option><option value="midnight">Midnight</option><option value="eclipse">Eclipse</option><option value="idea">IDEA</option><option value="solarized">Solarized</option></select></div></div>
+                <div class="settings-row"><div><div class="settings-label">Font Size</div><div class="settings-desc">Editor font size in pixels</div></div><div class="settings-control"><input type="range" class="form-range" id="settingFontSize" min="10" max="24" value="14" style="width:100px;"><span class="settings-value" id="fontSizeValue">14</span></div></div>
+                <div class="settings-row"><div><div class="settings-label">Line Height</div><div class="settings-desc">Editor line spacing</div></div><div class="settings-control"><input type="range" class="form-range" id="settingLineHeight" min="1" max="2.5" step="0.1" value="1.6" style="width:100px;"><span class="settings-value" id="lineHeightValue">1.6</span></div></div>
+                <div class="settings-row"><div><div class="settings-label">Show Line Numbers</div></div><div class="settings-control"><div class="toggle-switch active" id="settingLineNumbers"></div></div></div>
+                <div class="settings-row"><div><div class="settings-label">Highlight Active Line</div></div><div class="settings-control"><div class="toggle-switch active" id="settingActiveLine"></div></div></div>
+                <div class="settings-row"><div><div class="settings-label">Match Brackets</div></div><div class="settings-control"><div class="toggle-switch active" id="settingMatchBrackets"></div></div></div>
+                <div class="settings-row"><div><div class="settings-label">Auto Close Brackets</div></div><div class="settings-control"><div class="toggle-switch active" id="settingAutoCloseBrackets"></div></div></div>
+                <div class="settings-row"><div><div class="settings-label">Word Wrap</div></div><div class="settings-control"><div class="toggle-switch active" id="settingWordWrap"></div></div></div>
+                <div class="settings-row"><div><div class="settings-label">Show Whitespace</div></div><div class="settings-control"><div class="toggle-switch" id="settingShowWhitespace"></div></div></div>
+                <div class="settings-row"><div><div class="settings-label">Scroll Past End</div></div><div class="settings-control"><div class="toggle-switch active" id="settingScrollPastEnd"></div></div></div>
+            </div>
+            <div class="settings-group">
+                <div class="settings-group-title">Editor Behavior</div>
+                <div class="settings-row"><div><div class="settings-label">Key Map</div><div class="settings-desc">Keyboard shortcut scheme</div></div><div class="settings-control"><select class="form-input" id="settingKeyMap" style="width:160px;"><option value="default">Default</option><option value="sublime">Sublime Text</option><option value="vim">Vim</option><option value="emacs">Emacs</option></select></div></div>
+                <div class="settings-row"><div><div class="settings-label">Tab Size</div></div><div class="settings-control"><select class="form-input" id="settingTabSize" style="width:80px;"><option value="2">2</option><option value="4">4</option><option value="8">8</option></select></div></div>
+                <div class="settings-row"><div><div class="settings-label">Insert Spaces</div></div><div class="settings-control"><div class="toggle-switch active" id="settingInsertSpaces"></div></div></div>
+                <div class="settings-row"><div><div class="settings-label">Auto Save</div><div class="settings-desc">Save automatically every 10s</div></div><div class="settings-control"><div class="toggle-switch active" id="settingAutoSave"></div></div></div>
+                <div class="settings-row"><div><div class="settings-label">Auto Fold</div><div class="settings-desc">Fold code blocks on open</div></div><div class="settings-control"><div class="toggle-switch" id="settingAutoFold"></div></div></div>
+            </div>
+            <div class="settings-group">
+                <div class="settings-group-title">Data Management</div>
+                <div class="settings-row"><div><div class="settings-label">Storage Used</div><div class="settings-desc" id="storageUsedDesc">Calculating...</div></div><div class="settings-control"><span class="settings-value" id="storageUsed">0 MB</span></div></div>
+                <div class="settings-row"><div><div class="settings-label">Export All Data</div><div class="settings-desc">Download all files as ZIP</div></div><div class="settings-control"><button class="btn btn-secondary btn-sm" id="exportAllData">Export ZIP</button></div></div>
+                <div class="settings-row"><div><div class="settings-label">Import Data</div><div class="settings-desc">Restore from ZIP or JSON</div></div><div class="settings-control"><button class="btn btn-secondary btn-sm" id="importDataBtn">Import</button></div></div>
+                <div class="settings-row"><div><div class="settings-label">Clear All Data</div><div class="settings-desc">Delete everything permanently</div></div><div class="settings-control"><button class="btn btn-danger btn-sm" id="clearAllData">Clear All</button></div></div>
+            </div>
+        </div>
+        <div class="modal-footer"><button class="btn btn-secondary" id="resetSettings">Reset Defaults</button><button class="btn btn-primary" id="saveSettings">Save Changes</button></div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="shortcutsModal">
+    <div class="modal wide">
+        <div class="modal-header"><h3 class="modal-title">Keyboard Shortcuts</h3><button class="icon-btn" id="closeShortcutsModal" aria-label="Close"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button></div>
+        <div class="modal-body">
+            <table class="shortcuts-table">
+                <thead><tr><th>Action</th><th>Shortcut</th></tr></thead>
+                <tbody>
+                    <tr><td>New File</td><td><kbd>Ctrl</kbd> + <kbd>N</kbd></td></tr>
+                    <tr><td>Open File</td><td><kbd>Ctrl</kbd> + <kbd>O</kbd></td></tr>
+                    <tr><td>Save File</td><td><kbd>Ctrl</kbd> + <kbd>S</kbd></td></tr>
+                    <tr><td>Find</td><td><kbd>Ctrl</kbd> + <kbd>F</kbd></td></tr>
+                    <tr><td>Find & Replace</td><td><kbd>Ctrl</kbd> + <kbd>H</kbd></td></tr>
+                    <tr><td>Go to Line</td><td><kbd>Ctrl</kbd> + <kbd>G</kbd></td></tr>
+                    <tr><td>Command Palette</td><td><kbd>Ctrl</kbd> + <kbd>K</kbd></td></tr>
+                    <tr><td>Toggle Sidebar</td><td><kbd>Ctrl</kbd> + <kbd>B</kbd></td></tr>
+                    <tr><td>Toggle Preview</td><td><kbd>Ctrl</kbd> + <kbd>P</kbd></td></tr>
+                    <tr><td>Zen Mode</td><td><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>Z</kbd></td></tr>
+                    <tr><td>Settings</td><td><kbd>Ctrl</kbd> + <kbd>,</kbd></td></tr>
+                    <tr><td>Format Code</td><td><kbd>Alt</kbd> + <kbd>Shift</kbd> + <kbd>F</kbd></td></tr>
+                    <tr><td>Toggle Comment</td><td><kbd>Ctrl</kbd> + <kbd>/</kbd></td></tr>
+                    <tr><td>Fold Code</td><td><kbd>Ctrl</kbd> + <kbd>Q</kbd></td></tr>
+                    <tr><td>Fold All</td><td><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>Q</kbd></td></tr>
+                    <tr><td>Unfold All</td><td><kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>Q</kbd></td></tr>
+                    <tr><td>Close Tab</td><td><kbd>Ctrl</kbd> + <kbd>W</kbd></td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="modal-footer"><button class="btn btn-secondary" id="closeShortcutsBtn">Close</button></div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="snippetsModal">
+    <div class="modal">
+        <div class="modal-header"><h3 class="modal-title">Code Snippets</h3><button class="icon-btn" id="closeSnippetsModal" aria-label="Close"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button></div>
+        <div class="modal-body"><div class="snippets-list" id="snippetsList"></div></div>
+        <div class="modal-footer"><button class="btn btn-secondary" id="closeSnippetsBtn">Close</button></div>
+    </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+<input type="file" id="fileInput" style="display:none;" multiple accept=".txt,.html,.htm,.css,.js,.md,.json,.xml,.yaml,.yml,.py,.ts,.tsx,.jsx,.php,.sql,.sh,.sass,.scss,.less,.dockerfile,.go,.rs,.rb,.java,.c,.cpp,.h,.cs,.lua,.pl,.ps1,.vb,.vue,.coffee,.ls,.styl,.pug,.jade,.ini,.conf,.env,.toml,.diff,.patch">
+<input type="file" id="folderInput" style="display:none;" webkitdirectory directory multiple>
+<input type="file" id="importInput" style="display:none;" accept=".zip,.json">
+  
+<script src="./script.js"></script>
+</body>
+</html>
