@@ -2096,22 +2096,137 @@
     }
   }
 
+  /* ───────────── PWA Install Prompt ───────────── */
+  let deferredPrompt = null;
+  let installButton = null;
+
+  function initPWAInstall() {
+    // Listen for beforeinstallprompt event
+    window.addEventListener('beforeinstallprompt', (e) => {
+      console.log('[ForgeEdit] beforeinstallprompt fired');
+      // Prevent the mini-infobar from appearing on mobile
+      e.preventDefault();
+      // Stash the event so it can be triggered later
+      deferredPrompt = e;
+      // Show the install button
+      showInstallButton();
+      // Update installability status
+      showToast('ForgeEdit Pro can be installed!', 'success', 4000);
+    });
+
+    // Listen for app installed event
+    window.addEventListener('appinstalled', () => {
+      console.log('[ForgeEdit] App installed successfully');
+      deferredPrompt = null;
+      hideInstallButton();
+      showToast('ForgeEdit Pro installed successfully!', 'success', 5000);
+    });
+
+    // Check if already installed (standalone mode)
+    if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true) {
+      console.log('[ForgeEdit] App is already installed (standalone mode)');
+    }
+  }
+
+  function showInstallButton() {
+    // Remove existing install button if any
+    const existing = document.getElementById('installAppBtn');
+    if (existing) { existing.remove(); }
+
+    // Create install button in the title bar
+    const btn = document.createElement('button');
+    btn.id = 'installAppBtn';
+    btn.className = 'icon-btn primary';
+    btn.title = 'Install App';
+    btn.setAttribute('aria-label', 'Install ForgeEdit Pro');
+    btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>';
+    btn.style.cssText = 'animation:pulse-glow 2s ease-in-out infinite;background:var(--success);border-color:var(--success);';
+    btn.addEventListener('click', async () => {
+      await promptInstall();
+    });
+
+    // Insert before the newFile button in title bar
+    const newFileBtn = $('#newFile');
+    if (newFileBtn && newFileBtn.parentNode) {
+      newFileBtn.parentNode.insertBefore(btn, newFileBtn);
+    }
+    installButton = btn;
+
+    // Also add CSS animation for the glow effect
+    if (!document.getElementById('installBtnStyle')) {
+      const style = document.createElement('style');
+      style.id = 'installBtnStyle';
+      style.textContent = `
+        @keyframes pulse-glow {
+          0%, 100% { box-shadow: 0 0 5px rgba(16,185,129,0.3); }
+          50% { box-shadow: 0 0 20px rgba(16,185,129,0.6); }
+        }
+        #installAppBtn:hover { background: var(--accent-primary) !important; border-color: var(--accent-primary) !important; }
+      `;
+      document.head.appendChild(style);
+    }
+  }
+
+  function hideInstallButton() {
+    const btn = document.getElementById('installAppBtn');
+    if (btn) btn.remove();
+    installButton = null;
+  }
+
+  async function promptInstall() {
+    if (!deferredPrompt) {
+      showToast('Installation not available — try from browser menu', 'warning');
+      return;
+    }
+    // Show the install prompt
+    deferredPrompt.prompt();
+    // Wait for the user to respond to the prompt
+    const { outcome } = await deferredPrompt.userChoice;
+    console.log('[ForgeEdit] Install prompt outcome:', outcome);
+    if (outcome === 'accepted') {
+      showToast('Installing ForgeEdit Pro...', 'success');
+    } else {
+      showToast('Installation cancelled', 'info', 2000);
+    }
+    // Clear the deferred prompt — can only be used once
+    deferredPrompt = null;
+    hideInstallButton();
+  }
+
   /* ───────────── Service Worker Registration ───────────── */
   function registerSW() {
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('./sw.js').then((reg) => {
+      navigator.serviceWorker.register('./sw.js', { scope: './' }).then((reg) => {
         console.log('[ForgeEdit] Service Worker registered:', reg.scope);
-        // Check for updates
+
+        // Check if SW is active
+        if (reg.active) {
+          console.log('[ForgeEdit] Service Worker is active');
+        }
+
+        // Check for updates periodically (every 60 minutes)
+        setInterval(() => {
+          reg.update().catch(() => {});
+        }, 3600000);
+
+        // Listen for update
         reg.addEventListener('updatefound', () => {
           const newWorker = reg.installing;
           newWorker.addEventListener('statechange', () => {
-            if (newWorker.state === 'activated') {
-              showToast('App updated! Refresh for the latest version.', 'info', 6000);
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              // New content is available, notify user
+              showToast('Update available! Close and reopen to update.', 'info', 8000);
+            } else if (newWorker.state === 'activated') {
+              console.log('[ForgeEdit] New SW activated');
             }
           });
         });
       }).catch((err) => {
         console.warn('[ForgeEdit] SW registration failed:', err);
+        // Show helpful message about HTTPS requirement
+        if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+          console.warn('[ForgeEdit] PWA requires HTTPS. Current protocol:', location.protocol);
+        }
       });
     }
   }
@@ -2133,6 +2248,7 @@
     loadRecentFiles();
     showWelcome();
     updateStatusBar();
+    initPWAInstall();
     registerSW();
     startAutoSave();
     DOM.statusText.textContent = 'Ready';
