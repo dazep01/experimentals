@@ -17,6 +17,16 @@ const LOCAL_ASSETS = [
   './style.css',
   './script.js',
   './sw.js',
+  './manifest.json',
+  './icons/icon.svg',
+  './icons/icon-72x72.png',
+  './icons/icon-96x96.png',
+  './icons/icon-128x128.png',
+  './icons/icon-144x144.png',
+  './icons/icon-152x152.png',
+  './icons/icon-192x192.png',
+  './icons/icon-384x384.png',
+  './icons/icon-512x512.png',
 ];
 
 // Daftar CDN yang perlu di-cache (CodeMirror + libs)
@@ -261,8 +271,12 @@ async function networkFirst(request) {
 /* ───────────── Helper Functions ───────────── */
 function isStaticAsset(url) {
   // File lokal yang sudah di-precache
-  const staticPaths = ['./', './index.html', './style.css', './script.js', './sw.js'];
-  return staticPaths.some((p) => url.pathname.endsWith(p.replace('./', '/')) || url.pathname === p);
+  const staticExts = ['.html', '.css', '.js', '.json', '.png', '.svg'];
+  const staticPaths = ['./', './index.html', './style.css', './script.js', './sw.js', './manifest.json'];
+  const isStaticPath = staticPaths.some((p) => url.pathname.endsWith(p.replace('./', '/')) || url.pathname === p);
+  const isIcon = url.pathname.includes('/icons/');
+  const isStaticExt = staticExts.some((ext) => url.pathname.endsWith(ext));
+  return isStaticPath || isIcon || (url.origin === self.location.origin && isStaticExt);
 }
 
 function isCDNAsset(url) {
