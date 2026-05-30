@@ -15,7 +15,7 @@
    - Icons 192x192 + 512x512 accessible ✅
    - SW controlling page saat load ✅ (perlu refresh setelah first install)
    ============================================================ */
-
+importScripts("https://progressier.app/J4QAyK2WJOMARhxWJhme/sw.js" );
 const CACHE_NAME = 'forgeedit-pro-v3';
 const STATIC_CACHE = 'forgeedit-static-v3';
 const RUNTIME_CACHE = 'forgeedit-runtime-v3';
