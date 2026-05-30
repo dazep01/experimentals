@@ -373,7 +373,6 @@
             .status-bar{font-size:0.65rem;gap:4px;padding:3px 8px}
             .status-bar-left,.status-bar-right{gap:6px}
             .split-view{flex-direction:column!important}
-            .split-pane:first-child{border-right:none!important;border-bottom:1px solid var(--border-color)}
             .split-resize{width:auto!important;height:5px!important;cursor:row-resize!important}
             .split-resize::after{width:40px!important;height:3px!important}
             .modal{max-width:95%;max-height:92dvh;border-radius:var(--radius-md)}
