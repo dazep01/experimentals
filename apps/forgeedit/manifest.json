@@ -1,0 +1,168 @@
+{
+  "name": "ForgeEdit Pro",
+  "short_name": "ForgeEdit",
+  "description": "Editor Multifungsi dengan IndexedDB, Folder Tree, Zen Mode, dan Fitur Lengkap untuk Produktivitas Maksimal",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0f0f1a",
+  "theme_color": "#7c3aed",
+  "lang": "id",
+  "dir": "ltr",
+  "categories": ["productivity", "utilities", "developer tools"],
+  "prefer_related_applications": false,
+  "icons": [
+    {
+      "src": "icons/icon-72x72.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-96x96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-128x128.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-144x144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-152x152.png",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-384x384.png",
+      "sizes": "384x384",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "New File",
+      "short_name": "New File",
+      "description": "Create a new file",
+      "url": "./?action=newfile",
+      "icons": [
+        {
+          "src": "icons/shortcut-newfile.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Open File",
+      "short_name": "Open",
+      "description": "Open an existing file",
+      "url": "./?action=openfile",
+      "icons": [
+        {
+          "src": "icons/shortcut-openfile.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Settings",
+      "short_name": "Settings",
+      "description": "Open app settings",
+      "url": "./?action=settings",
+      "icons": [
+        {
+          "src": "icons/shortcut-settings.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "icons/screenshot-wide.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "ForgeEdit Pro in action"
+    },
+    {
+      "src": "icons/screenshot-narrow.png",
+      "sizes": "720x1280",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "ForgeEdit Pro on mobile"
+    }
+  ],
+  "share_target": {
+    "action": "./",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "title": "name",
+      "text": "description",
+      "url": "url",
+      "files": [
+        {
+          "name": "files",
+          "accept": ["text/*", "application/json", "application/javascript", "application/xml"]
+        }
+      ]
+    }
+  },
+  "file_handlers": [
+    {
+      "action": "./",
+      "accept": {
+        "text/*": [".txt", ".md", ".html", ".css", ".js", ".json", ".xml", ".yaml", ".yml", ".py", ".rb", ".go", ".rs", ".java", ".c", ".cpp", ".php", ".sql", ".sh", ".env", ".toml", ".ini", ".conf"],
+        "application/json": [".json"],
+        "application/javascript": [".js", ".mjs"],
+        "application/xml": [".xml", ".svg"]
+      },
+      "icons": [
+        {
+          "src": "icons/icon-192x192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
+  ]
+}
