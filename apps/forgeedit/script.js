@@ -2269,68 +2269,75 @@
   }
 
   /* ───────────── Service Worker Registration ───────────── */
-  function registerSW() {
-    if ('serviceWorker' in navigator) {
-      // Hitung base path dari lokasi halaman saat ini
-      // Berguna untuk subdirectory hosting (e.g. github.io/repo/apps/forgeedit/)
-      const currentPath = location.pathname;
-      const basePath = currentPath.endsWith('/') ? currentPath : currentPath.substring(0, currentPath.lastIndexOf('/') + 1);
-      const swUrl = basePath + 'sw.js';
-      const swScope = basePath;
+function registerSW() {
+  if ('serviceWorker' in navigator) {
+    // Hitung base path dari lokasi halaman saat ini
+    const currentPath = location.pathname;
+    const basePath = currentPath.endsWith('/') ? currentPath : currentPath.substring(0, currentPath.lastIndexOf('/') + 1);
+    const swUrl = basePath + 'sw.js';
+    const swScope = basePath;
 
-      console.log('[ForgeEdit PWA] Current path:', currentPath);
-      console.log('[ForgeEdit PWA] SW URL:', swUrl);
-      console.log('[ForgeEdit PWA] SW Scope:', swScope);
+    console.log('[ForgeEdit PWA] Current path:', currentPath);
+    console.log('[ForgeEdit PWA] SW URL:', swUrl);
+    console.log('[ForgeEdit PWA] SW Scope:', swScope);
 
-      navigator.serviceWorker.register(swUrl, { scope: swScope }).then((reg) => {
-        console.log('[ForgeEdit PWA] Service Worker registered:', reg.scope);
-        console.log('[ForgeEdit PWA] SW active:', !!reg.active);
-        console.log('[ForgeEdit PWA] SW installing:', !!reg.installing);
-        console.log('[ForgeEdit PWA] SW waiting:', !!reg.waiting);
+    // Flag untuk mencegah infinite reload loop
+    let refreshing = false;
 
-        // PENTING: Jika SW baru saja aktif tapi belum controlling page,
-        // user perlu refresh agar Chrome bisa detect installability
-        if (!navigator.serviceWorker.controller) {
-          console.warn('[ForgeEdit PWA] ⚠️ SW terdaftar tapi BELUM controlling page ini.');
-          console.warn('[ForgeEdit PWA] Ini NORMAL pada kunjungan pertama.');
-          console.warn('[ForgeEdit PWA] Setelah SW activated, halaman akan auto-reload...');
-        } else {
-          console.log('[ForgeEdit PWA] ✅ SW is controlling this page');
-        }
+    navigator.serviceWorker.register(swUrl, { scope: swScope }).then((reg) => {
+      console.log('[ForgeEdit PWA] Service Worker registered:', reg.scope);
+      console.log('[ForgeEdit PWA] SW active:', !!reg.active);
+      console.log('[ForgeEdit PWA] SW installing:', !!reg.installing);
+      console.log('[ForgeEdit PWA] SW waiting:', !!reg.waiting);
 
-        // Check for updates periodically (every 60 minutes)
-        setInterval(() => {
-          reg.update().catch(() => {});
-        }, 3600000);
+      if (!navigator.serviceWorker.controller) {
+        console.warn('[ForgeEdit PWA] ⚠️ SW terdaftar tapi BELUM controlling page ini.');
+        console.warn('[ForgeEdit PWA] Ini NORMAL pada kunjungan pertama.');
+      } else {
+        console.log('[ForgeEdit PWA] ✅ SW is controlling this page');
+      }
 
-        // Listen for controller change — ini terjadi ketika SW baru mengambil kontrol
-        navigator.serviceWorker.addEventListener('controllerchange', () => {
-          console.log('[ForgeEdit PWA] ✅ SW controller changed! Page will reload...');
-          // Auto-reload agar Chrome bisa detect installability pada load berikutnya
-          location.reload();
-        });
+      // Check for updates periodically (every 60 minutes)
+      setInterval(() => {
+        reg.update().catch(() => {});
+      }, 3600000);
 
-        // Listen for update
-        reg.addEventListener('updatefound', () => {
-          const newWorker = reg.installing;
-          newWorker.addEventListener('statechange', () => {
-            console.log('[ForgeEdit PWA] New worker state:', newWorker.state);
-            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-              // New content is available, notify user
-              showToast('Update available! Close and reopen to update.', 'info', 8000);
-            }
-          });
-        });
-      }).catch((err) => {
-        console.warn('[ForgeEdit PWA] SW registration failed:', err);
-        if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
-          console.warn('[ForgeEdit PWA] PWA requires HTTPS. Current protocol:', location.protocol);
-        }
+      // Listen for controller change dengan pengaman flag
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (refreshing) return; // Jika sedang proses refresh, abaikan
+        refreshing = true;
+        console.log('[ForgeEdit PWA] ✅ SW controller changed! Page will reload...');
+        location.reload();
       });
-    } else {
-      console.warn('[ForgeEdit PWA] Service Worker not supported in this browser');
-    }
+
+      // Listen for update
+      reg.addEventListener('updatefound', () => {
+        const newWorker = reg.installing;
+        if (!newWorker) return;
+
+        newWorker.addEventListener('statechange', () => {
+          console.log('[ForgeEdit PWA] New worker state:', newWorker.state);
+          // Pastikan navigator.serviceWorker.controller ada, artinya ini adalah UPDATE, bukan instalasi pertama
+          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+            // Cek apakah fungsi showToast tersedia sebelum dipanggil
+            if (typeof showToast === 'function') {
+              showToast('Update available! Close and reopen to update.', 'info', 8000);
+            } else {
+              console.log('[ForgeEdit PWA] Update available! Silakan muat ulang halaman.');
+            }
+          }
+        });
+      });
+    }).catch((err) => {
+      console.warn('[ForgeEdit PWA] SW registration failed:', err);
+      if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+        console.warn('[ForgeEdit PWA] PWA requires HTTPS. Current protocol:', location.protocol);
+      }
+    });
+  } else {
+    console.warn('[ForgeEdit PWA] Service Worker not supported in this browser');
   }
+}
 
   /* ───────────── Initialize ───────────── */
   async function init() {
