@@ -15,7 +15,7 @@
    - Icons 192x192 + 512x512 accessible ✅
    - SW controlling page saat load ✅ (perlu refresh setelah first install)
    ============================================================ */
-const CACHE_NAME = 'forgeedit-pro-v3';
+
 const STATIC_CACHE = 'forgeedit-static-v3';
 const RUNTIME_CACHE = 'forgeedit-runtime-v3';
 
@@ -28,9 +28,8 @@ const CACHE_VERSION = '20260531b';
 const BASE_PATH = self.location.pathname.replace(/sw\.js$/, '');
 
 // Daftar file lokal yang perlu di-precache
-// PENTING: Hanya file lokal! CDN di-cache runtime agar SW install cepat.
+// PENTING: Menghapus BASE_PATH mentah untuk menghindari konflik 404 pada hosting tertentu
 const LOCAL_ASSETS = [
-  BASE_PATH,
   BASE_PATH + 'index.html',
   BASE_PATH + 'style.css',
   BASE_PATH + 'script.js',
@@ -65,7 +64,7 @@ self.addEventListener('install', (event) => {
       })
       .catch((err) => {
         console.error('[ForgeEdit SW] Pre-cache FAILED:', err);
-        // Tetap skipWaiting meski ada error agar SW tetap aktif
+        // Tetap skipWaiting meski ada error agar SW tetap aktif dan tidak menggantung
         return self.skipWaiting();
       })
   );
@@ -120,8 +119,16 @@ self.addEventListener('fetch', (event) => {
 
 // Cache First: prioritaskan cache, fallback ke network
 async function cacheFirst(request) {
-  const cached = await caches.match(request);
+  const url = new URL(request.url);
+  
+  // Solusi Cerdas: Jika mengakses root sub-folder, arahkan pencarian cache ke index.html
+  const cacheKey = (url.pathname === BASE_PATH || url.pathname === BASE_PATH + '/') 
+    ? BASE_PATH + 'index.html' 
+    : request;
+
+  const cached = await caches.match(cacheKey);
   if (cached) return cached;
+  
   try {
     const response = await fetch(request);
     if (response.ok) {
@@ -130,7 +137,7 @@ async function cacheFirst(request) {
     }
     return response;
   } catch (err) {
-    // Jika request HTML dan tidak ada di cache, return halaman utama
+    // Jika request HTML gagal di network dan tidak ada di cache, kembalikan halaman utama offline
     if (request.headers.get('Accept')?.includes('text/html')) {
       const fallback = await caches.match(BASE_PATH + 'index.html');
       if (fallback) return fallback;
@@ -193,19 +200,21 @@ function isCDNAsset(url) {
 
 /* ───────────── Message Handler ───────────── */
 self.addEventListener('message', (event) => {
-  if (event.data && event.data.type === 'SKIP_WAITING') {
+  if (!event.data) return;
+
+  if (event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
   }
-  if (event.data && event.data.type === 'CLEAR_CACHE') {
+  if (event.data.type === 'CLEAR_CACHE') {
     caches.keys().then((names) => {
       names.forEach((name) => caches.delete(name));
     });
   }
-  if (event.data && event.data.type === 'GET_VERSION') {
+  if (event.data.type === 'GET_VERSION') {
     event.ports[0].postMessage({ version: CACHE_VERSION, basePath: BASE_PATH });
   }
   // Diagnostic: return cache status
-  if (event.data && event.data.type === 'DIAG_CACHE') {
+  if (event.data.type === 'DIAG_CACHE') {
     caches.keys().then((names) => {
       const result = {};
       Promise.all(names.map(name =>
@@ -219,8 +228,9 @@ self.addEventListener('message', (event) => {
   }
 });
 
-/* ───────────── Background Sync (jika didukung) ───────────── */
-if ('sync' in self) {
+/* ───────────── Background Sync ───────────── */
+// Perbaikan: Deteksi fitur sync yang benar di Service Worker scope
+if (self.registration && 'sync' in self.registration) {
   self.addEventListener('sync', (event) => {
     if (event.tag === 'forgeedit-sync') {
       console.log('[ForgeEdit SW] Background sync triggered');
@@ -228,8 +238,9 @@ if ('sync' in self) {
   });
 }
 
-/* ───────────── Push Notification (jika didukung) ───────────── */
-if ('push' in self) {
+/* ───────────── Push Notification ───────────── */
+// Perbaikan: Deteksi fitur pushManager yang benar di Service Worker scope
+if (self.registration && 'pushManager' in self.registration) {
   self.addEventListener('push', (event) => {
     const data = event.data ? event.data.json() : {};
     const title = data.title || 'ForgeEdit Pro';
