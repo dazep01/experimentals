@@ -153,8 +153,8 @@
         .CodeMirror-foldmarker{color:var(--accent-primary);font-family:var(--font-sans);font-size:0.8em;padding:0 4px;background:var(--accent-glow);border-radius:3px}
         .CodeMirror-foldgutter{width:14px}
         .CodeMirror-foldgutter-open,.CodeMirror-foldgutter-folded{color:var(--text-muted);font-size:0.8em}
-        .CodeMirror-foldgutter-open::after{content:"\\25BE"}
-        .CodeMirror-foldgutter-folded::after{content:"\\25B8"}
+        .CodeMirror-foldgutter-open::after{content:"▼"}
+        .CodeMirror-foldgutter-folded::after{content:"▶"}
         .cm-trailingspace{background:var(--error-dim)}
         .cm-matchhighlight{background:var(--accent-glow)}
         .cm-searching{background:var(--warning-dim);border-radius:2px}
