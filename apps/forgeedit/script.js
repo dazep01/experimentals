@@ -766,6 +766,250 @@
     }
   }
 
+// ============================================================
+// ===== GITMOIRE BRIDGE (MINIMAL REFACTOR) =====
+// ============================================================
+const GITMOIRE_BRIDGE_KEY = 'ForgeEdit_To_GitMoire';
+
+function feEscapeHtml(str) {
+  return String(str ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function feFormatBytes(bytes) {
+  if (!Number.isFinite(bytes) || bytes < 0) return '';
+  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+  let value = bytes;
+  let unit = 0;
+  while (value >= 1024 && unit < units.length - 1) {
+    value /= 1024;
+    unit++;
+  }
+  return `${value.toFixed(unit === 0 ? 0 : 1)} ${units[unit]}`;
+}
+
+function feNotify(title, message, type = 'info') {
+  try {
+    if (typeof showToast === 'function') {
+      showToast(title, message, type);
+      return;
+    }
+    if (window.UI && typeof UI.toast === 'function') {
+      UI.toast(title, message, type);
+      return;
+    }
+  } catch (_) {}
+  console.log(`[${type}] ${title}: ${message}`);
+}
+
+function initGitMoireBridge() {
+  const sendBtn = document.getElementById('sendToGitMoireBtn');
+  const openBtn = document.getElementById('openGitMoireBtn');
+
+  if (sendBtn && !sendBtn.dataset.gitmoireBound) {
+    sendBtn.addEventListener('click', showSendToGitMoireModal);
+    sendBtn.dataset.gitmoireBound = '1';
+  }
+
+  if (openBtn && !openBtn.dataset.gitmoireBound) {
+    openBtn.addEventListener('click', openGitMoireInline);
+    openBtn.dataset.gitmoireBound = '1';
+  }
+}
+
+async function showSendToGitMoireModal() {
+  const old = document.getElementById('forgeedit-gitmoire-overlay');
+  if (old) old.remove();
+
+  let allFiles = [];
+  try {
+    allFiles = await dbGetAll('files');
+  } catch (err) {
+    console.error('[GitMoire Bridge] Failed to read files:', err);
+    feNotify('ForgeEdit', 'Gagal membaca file dari IndexedDB.', 'error');
+    return;
+  }
+
+  const files = (allFiles || []).filter(f =>
+    f && f.type === 'file' && typeof f.path === 'string'
+  );
+
+  if (!files.length) {
+    feNotify('ForgeEdit', 'Tidak ada file yang bisa dikirim.', 'warning');
+    return;
+  }
+
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay active';
+  overlay.id = 'forgeedit-gitmoire-overlay';
+
+  overlay.innerHTML = `
+    <div class="modal wide">
+      <div class="modal-header">
+        <div class="modal-title">Send to GitMoire</div>
+        <button class="modal-close" id="fgm-close" type="button">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Search files</label>
+          <input class="form-input" id="fgm-search" placeholder="Type path or filename..." autocomplete="off">
+        </div>
+
+        <div id="fgm-file-list" style="max-height:52vh;overflow:auto;border:1px solid var(--border-color);border-radius:var(--radius-sm);padding:8px;"></div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-secondary" id="fgm-cancel" type="button">Cancel</button>
+        <button class="btn-primary" id="fgm-open" type="button">Open GitMoire</button>
+        <button class="btn-success" id="fgm-send" type="button">Send Selected</button>
+        <button class="btn-primary" id="fgm-send-open" type="button">Send & Open</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+  document.body.style.overflow = 'hidden';
+
+  const listEl = overlay.querySelector('#fgm-file-list');
+  const searchEl = overlay.querySelector('#fgm-search');
+
+  function renderList(query = '') {
+    const q = query.trim().toLowerCase();
+
+    const visible = files.filter(f => {
+      const path = String(f.path || '').toLowerCase();
+      const name = String(f.name || '').toLowerCase();
+      return !q || path.includes(q) || name.includes(q);
+    });
+
+    if (!visible.length) {
+      listEl.innerHTML = `<div class="tree-empty" style="padding:18px 10px;">No matching files</div>`;
+      return;
+    }
+
+    listEl.innerHTML = visible.map(f => `
+      <label style="display:flex;align-items:flex-start;gap:10px;padding:8px 10px;border-radius:10px;cursor:pointer;">
+        <input type="checkbox" class="fgm-check" value="${feEscapeHtml(f.path)}" checked style="margin-top:3px;">
+        <span style="display:flex;flex-direction:column;min-width:0;flex:1;">
+          <span style="font-weight:600;word-break:break-all;">${feEscapeHtml(f.path)}</span>
+          <span style="font-size:11px;color:var(--text-muted);">
+            ${feEscapeHtml(f.type || 'file')}${typeof f.size === 'number' ? ` · ${feFormatBytes(f.size)}` : ''}
+          </span>
+        </span>
+      </label>
+    `).join('');
+  }
+
+  function collectSelectedPaths() {
+    return Array.from(listEl.querySelectorAll('.fgm-check:checked')).map(el => el.value);
+  }
+
+  function closeModal() {
+    overlay.remove();
+    document.body.style.overflow = '';
+  }
+
+  function sendToBridge(openAfter = false) {
+    const selectedPaths = collectSelectedPaths();
+    if (!selectedPaths.length) {
+      feNotify('ForgeEdit', 'Pilih minimal satu file.', 'warning');
+      return;
+    }
+
+    const payload = files
+      .filter(f => selectedPaths.includes(f.path))
+      .map(f => ({
+        name: f.path,
+        content: typeof f.content === 'string' ? f.content : ''
+      }));
+
+    try {
+      const existing = JSON.parse(localStorage.getItem(GITMOIRE_BRIDGE_KEY) || '[]');
+      const merged = Array.isArray(existing) ? [...existing, ...payload] : payload;
+
+      localStorage.setItem(GITMOIRE_BRIDGE_KEY, JSON.stringify(merged));
+      feNotify('ForgeEdit', `${payload.length} file siap masuk ke GitMoire.`, 'success');
+
+      closeModal();
+      if (openAfter) openGitMoireInline();
+    } catch (err) {
+      console.error('[GitMoire Bridge] Save failed:', err);
+      feNotify('ForgeEdit', 'Gagal menulis bridge ke localStorage.', 'error');
+    }
+  }
+
+  overlay.querySelector('#fgm-close').onclick = closeModal;
+  overlay.querySelector('#fgm-cancel').onclick = closeModal;
+  overlay.querySelector('#fgm-send').onclick = () => sendToBridge(false);
+  overlay.querySelector('#fgm-send-open').onclick = () => sendToBridge(true);
+  overlay.querySelector('#fgm-open').onclick = () => {
+    closeModal();
+    openGitMoireInline();
+  };
+
+  searchEl.addEventListener('input', () => renderList(searchEl.value));
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) closeModal();
+  });
+
+  renderList();
+  setTimeout(() => searchEl.focus(), 0);
+}
+
+function openGitMoireInline() {
+  const old = document.getElementById('forgeedit-gitmoire-inline');
+  if (old) {
+    old.remove();
+    document.body.style.overflow = '';
+    return;
+  }
+
+  const overlay = document.createElement('div');
+  overlay.id = 'forgeedit-gitmoire-inline';
+  overlay.style.cssText = `
+    position:fixed;
+    inset:0;
+    z-index:3000;
+    background:rgba(0,0,0,.45);
+    backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
+    display:flex;
+    align-items:stretch;
+    justify-content:stretch;
+  `;
+
+  overlay.innerHTML = `
+    <div style="position:relative;flex:1;margin:12px;border-radius:16px;overflow:hidden;background:var(--bg-secondary);box-shadow:0 16px 60px rgba(0,0,0,.45);border:1px solid var(--border-color);">
+      <button id="fgm-inline-close" type="button" style="position:absolute;top:10px;right:10px;z-index:2;width:34px;height:34px;border:none;border-radius:10px;background:rgba(0,0,0,.35);color:#fff;cursor:pointer;font-size:18px;">✕</button>
+      <iframe
+        src="/experimentals/apps/gitmoire.html"
+        style="width:100%;height:100%;border:0;background:#fff;"
+        title="GitMoire"
+      ></iframe>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+  document.body.style.overflow = 'hidden';
+
+  overlay.querySelector('#fgm-inline-close').onclick = () => {
+    overlay.remove();
+    document.body.style.overflow = '';
+  };
+
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) {
+      overlay.remove();
+      document.body.style.overflow = '';
+    }
+  });
+}
+   
   /* ───────────── Toolbar ───────────── */
   function updateToolbarForFile(name) {
     const isMD = name && isMarkdownFile(name);
@@ -2367,6 +2611,8 @@ function registerSW() {
       cm.style.lineHeight = String(state.settings.lineHeight);
     });
 
+    initGitMoireBridge();
+     
     console.log('[ForgeEdit Pro] Initialized');
   }
 
