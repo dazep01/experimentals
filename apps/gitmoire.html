@@ -1273,6 +1273,69 @@ function createStagedOperationPlan() {
 }
 
 // ============================================================
+// ===== IMPORT FROM FORGEEDIT =====
+// ============================================================
+
+function importFromForgeEdit() {
+  try {
+    const raw = localStorage.getItem(
+      'ForgeEdit_To_GitMoire'
+    );
+
+    if (!raw) return false;
+
+    const files = JSON.parse(raw);
+
+    if (!Array.isArray(files)) return false;
+
+    let imported = 0;
+
+    files.forEach(file => {
+      if (!file?.name || typeof file.content !== 'string') {
+        return;
+      }
+
+      const exists = State.stagedFiles.some(
+        f => f.name === file.name
+      );
+
+      if (!exists) {
+        State.stagedFiles.push({
+          name: file.name,
+          content: file.content
+        });
+
+        imported++;
+      }
+    });
+
+    localStorage.removeItem(
+      'ForgeEdit_To_GitMoire'
+    );
+
+    if (imported > 0) {
+      renderStagedFiles();
+
+      UI.toast(
+        'Files Imported',
+        `${imported} file(s) imported from ForgeEdit.`,
+        'success'
+      );
+    }
+
+    return imported > 0;
+
+  } catch (err) {
+    console.error(
+      '[ForgeEdit Import]',
+      err
+    );
+
+    return false;
+  }
+}
+  
+// ============================================================
 // ===== NEW FILE MODAL =====
 // ============================================================
 function getFolderPaths(tree=null) {
@@ -1512,19 +1575,59 @@ function restoreChatHistory() {
 // ============================================================
 async function init() {
   Terminal.log('info', `GitMoire v${APP_VERSION} initializing...`);
-  if (!navigator.onLine) { Terminal.log('warn', 'Application started in offline mode'); UI.toast('Offline Mode', 'You are currently offline. Some features may not work.', 'warning', 5000); }
-  
+
+  if (!navigator.onLine) {
+    Terminal.log('warn', 'Application started in offline mode');
+    UI.toast(
+      'Offline Mode',
+      'You are currently offline. Some features may not work.',
+      'warning',
+      5000
+    );
+  }
+
   const loaded = Storage.load();
-  if (loaded) { Terminal.log('ok','Session loaded from storage'); UI.updateExpiryBadge(); }
-  if (State.chatHistory.length > 0) restoreChatHistory();
-  
-  UI.renderContextFiles(); UI.renderInputContextTags(); renderStagedFiles();
-  if (State.githubToken && State.githubUser && State.githubRepo) { UI.updateStatus(false,'Syncing...'); await syncRepo(true); Terminal.log('ok','Auto-sync complete'); }
-  else { UI.updateStatus(false,'Not connected'); Terminal.log('warn','No repo configured — open Settings to get started'); }
-  if (!loaded) setTimeout(() => UI.toast('Welcome to GitMoire!','Open Settings (⚙) to connect your GitHub repo and AI provider.','info',6000), 500);
+
+  if (loaded) {
+    Terminal.log('ok','Session loaded from storage');
+    UI.updateExpiryBadge();
+  }
+
+  importFromForgeEdit();
+
+  if (State.chatHistory.length > 0) {
+    restoreChatHistory();
+  }
+
+  UI.renderContextFiles();
+  UI.renderInputContextTags();
+
+  renderStagedFiles();
+
+  if (State.githubToken && State.githubUser && State.githubRepo) {
+    UI.updateStatus(false,'Syncing...');
+    await syncRepo(true);
+    Terminal.log('ok','Auto-sync complete');
+  } else {
+    UI.updateStatus(false,'Not connected');
+    Terminal.log('warn','No repo configured — open Settings to get started');
+  }
+
+  if (!loaded) {
+    setTimeout(() =>
+      UI.toast(
+        'Welcome to GitMoire!',
+        'Open Settings (⚙) to connect your GitHub repo and AI provider.',
+        'info',
+        6000
+      ),
+      500
+    );
+  }
+
   Terminal.log('ok','GitMoire ready');
 }
-
+  
 if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', init); } 
 else { init(); }
 
