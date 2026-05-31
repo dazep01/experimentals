@@ -769,6 +769,7 @@
 // ============================================================
 // ===== GITMOIRE BRIDGE (MINIMAL REFACTOR) =====
 // ============================================================
+
 const GITMOIRE_BRIDGE_KEY = 'ForgeEdit_To_GitMoire';
 
 function feEscapeHtml(str) {
@@ -804,6 +805,13 @@ function feNotify(title, message, type = 'info') {
     }
   } catch (_) {}
   console.log(`[${type}] ${title}: ${message}`);
+}
+
+function normalizeTargetFolder(path) {
+  return String(path || '')
+    .trim()
+    .replace(/^\/+/, '')
+    .replace(/\/+$/, '');
 }
 
 function initGitMoireBridge() {
@@ -856,11 +864,61 @@ async function showSendToGitMoireModal() {
 
       <div class="modal-body">
         <div class="form-group">
-          <label class="form-label">Search files</label>
-          <input class="form-input" id="fgm-search" placeholder="Type path or filename..." autocomplete="off">
+          <label class="form-label">Repository</label>
+          <input
+            class="form-input"
+            id="fgm-repo"
+            placeholder="contoh: RaaJS"
+            autocomplete="off"
+          >
+          <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">
+            ⚠ Pastikan nama repository sesuai dengan repository yang sedang sinkron di GitMoire.
+          </div>
         </div>
 
-        <div id="fgm-file-list" style="max-height:52vh;overflow:auto;border:1px solid var(--border-color);border-radius:var(--radius-sm);padding:8px;"></div>
+        <div class="form-group">
+          <label class="form-label">Target Folder</label>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span
+              id="fgm-repo-prefix"
+              style="
+                padding:0 10px;
+                border:1px solid var(--border-color);
+                border-radius:var(--radius-sm);
+                background:var(--bg-secondary);
+                white-space:nowrap;
+              "
+            >/</span>
+
+            <input
+              class="form-input"
+              id="fgm-target-folder"
+              placeholder="contoh: docs/examples"
+              autocomplete="off"
+            >
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Search files</label>
+          <input
+            class="form-input"
+            id="fgm-search"
+            placeholder="Type path or filename..."
+            autocomplete="off"
+          >
+        </div>
+
+        <div
+          id="fgm-file-list"
+          style="
+            max-height:52vh;
+            overflow:auto;
+            border:1px solid var(--border-color);
+            border-radius:var(--radius-sm);
+            padding:8px;
+          "
+        ></div>
       </div>
 
       <div class="modal-footer">
@@ -877,6 +935,14 @@ async function showSendToGitMoireModal() {
 
   const listEl = overlay.querySelector('#fgm-file-list');
   const searchEl = overlay.querySelector('#fgm-search');
+  const repoEl = overlay.querySelector('#fgm-repo');
+  const targetFolderEl = overlay.querySelector('#fgm-target-folder');
+  const repoPrefixEl = overlay.querySelector('#fgm-repo-prefix');
+
+  repoEl.addEventListener('input', () => {
+    const value = repoEl.value.trim();
+    repoPrefixEl.textContent = value ? `${value}/` : '/';
+  });
 
   function renderList(query = '') {
     const q = query.trim().toLowerCase();
@@ -914,29 +980,59 @@ async function showSendToGitMoireModal() {
     document.body.style.overflow = '';
   }
 
-  function sendToBridge(openAfter = false) {
+  function buildPayload() {
     const selectedPaths = collectSelectedPaths();
+
     if (!selectedPaths.length) {
       feNotify('ForgeEdit', 'Pilih minimal satu file.', 'warning');
-      return;
+      return null;
     }
 
-    const payload = files
+    const repository = repoEl.value.trim();
+    if (!repository) {
+      feNotify('ForgeEdit', 'Nama repository wajib diisi.', 'warning');
+      repoEl.focus();
+      return null;
+    }
+
+    const targetFolder = normalizeTargetFolder(targetFolderEl.value);
+
+    const payloadFiles = files
       .filter(f => selectedPaths.includes(f.path))
       .map(f => ({
         name: f.path,
         content: typeof f.content === 'string' ? f.content : ''
       }));
 
-    try {
-      const existing = JSON.parse(localStorage.getItem(GITMOIRE_BRIDGE_KEY) || '[]');
-      const merged = Array.isArray(existing) ? [...existing, ...payload] : payload;
+    return {
+      repository,
+      targetFolder,
+      files: payloadFiles,
+      ts: Date.now()
+    };
+  }
 
-      localStorage.setItem(GITMOIRE_BRIDGE_KEY, JSON.stringify(merged));
-      feNotify('ForgeEdit', `${payload.length} file siap masuk ke GitMoire.`, 'success');
+  function sendToBridge(openAfter = false) {
+    const payload = buildPayload();
+    if (!payload) return;
+
+    try {
+      localStorage.setItem(
+        GITMOIRE_BRIDGE_KEY,
+        JSON.stringify(payload)
+      );
+
+      feNotify(
+        'ForgeEdit',
+        `${payload.files.length} file siap masuk ke GitMoire.`,
+        'success'
+      );
 
       closeModal();
-      if (openAfter) openGitMoireInline();
+
+      if (openAfter) {
+        openGitMoireInline();
+      }
     } catch (err) {
       console.error('[GitMoire Bridge] Save failed:', err);
       feNotify('ForgeEdit', 'Gagal menulis bridge ke localStorage.', 'error');
