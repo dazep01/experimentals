@@ -1275,64 +1275,57 @@ function createStagedOperationPlan() {
 // ============================================================
 // ===== IMPORT FROM FORGEEDIT =====
 // ============================================================
-
 function importFromForgeEdit() {
   try {
-    const raw = localStorage.getItem(
-      'ForgeEdit_To_GitMoire'
-    );
-
+    const raw = localStorage.getItem('ForgeEdit_To_GitMoire');
     if (!raw) return false;
 
-    const files = JSON.parse(raw);
+    const bridge = JSON.parse(raw);
+    if (!bridge || typeof bridge !== 'object' || !Array.isArray(bridge.files)) return false;
 
-    if (!Array.isArray(files)) return false;
+    const repository = typeof bridge.repository === 'string' ? bridge.repository.trim() : '';
+    const targetFolder = normalizeTargetFolder(bridge.targetFolder);
 
     let imported = 0;
 
-    files.forEach(file => {
-      if (!file?.name || typeof file.content !== 'string') {
-        return;
-      }
+    bridge.files.forEach(file => {
+      if (!file?.name || typeof file.content !== 'string') return;
 
-      const exists = State.stagedFiles.some(
-        f => f.name === file.name
-      );
+      const finalName = targetFolder ? `${targetFolder}/${file.name}` : file.name;
 
+      const exists = State.stagedFiles.some(f => f.name === finalName);
       if (!exists) {
         State.stagedFiles.push({
-          name: file.name,
+          name: finalName,
           content: file.content
         });
-
         imported++;
       }
     });
 
-    localStorage.removeItem(
-      'ForgeEdit_To_GitMoire'
-    );
+    localStorage.removeItem('ForgeEdit_To_GitMoire');
 
     if (imported > 0) {
       renderStagedFiles();
-
       UI.toast(
         'Files Imported',
-        `${imported} file(s) imported from ForgeEdit.`,
+        `${imported} file(s) imported from ForgeEdit${repository ? ` for ${repository}` : ''}.`,
         'success'
       );
     }
 
     return imported > 0;
-
   } catch (err) {
-    console.error(
-      '[ForgeEdit Import]',
-      err
-    );
-
+    console.error('[ForgeEdit Import]', err);
     return false;
   }
+}
+
+function normalizeTargetFolder(path) {
+  return String(path || '')
+    .trim()
+    .replace(/^\/+/, '')
+    .replace(/\/+$/, '');
 }
   
 // ============================================================
