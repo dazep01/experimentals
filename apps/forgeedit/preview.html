@@ -1,179 +1,474 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ForgeEdit Preview</title>
   <style>
     :root {
-      --bg: #0f1115;
-      --panel: #151922;
-      --panel-2: #1a2030;
-      --text: #e8ecf3;
-      --muted: #8f99ab;
-      --border: #2a3140;
-      --accent: #6ea8fe;
-      --danger: #ff6b6b;
-      --ok: #60d394;
-      --warn: #f7b267;
-      --shadow: 0 18px 60px rgba(0,0,0,.35);
-      --radius: 14px;
+      --bg: #0f1118;
+      --bg-elev: #151a24;
+      --bg-panel: #171d29;
+      --bg-soft: rgba(255, 255, 255, 0.03);
+      --text: #e6edf3;
+      --text-dim: #9aa4b2;
+      --text-faint: #707a89;
+      --line: #2a3140;
+      --line-strong: #384050;
+      --accent: #58a6ff;
+      --accent-2: #8b5cf6;
+      --success: #3fb950;
+      --warning: #d29922;
+      --danger: #f85149;
+      --shadow: 0 18px 60px rgba(0, 0, 0, 0.32);
+      --radius-sm: 10px;
+      --radius-md: 14px;
+      --radius-lg: 18px;
       --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-      --sans: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      --sans: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      --topbar-h: 64px;
+      --preview-header-h: 76px;
+      --console-h: 240px;
+      --sidebar-w: 300px;
     }
-    html, body { height: 100%; margin: 0; background: var(--bg); color: var(--text); font-family: var(--sans); }
+
     * { box-sizing: border-box; }
-    button, input { font: inherit; }
+    html, body {
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    button, input {
+      font: inherit;
+      color: inherit;
+    }
+
+    button {
+      border: 0;
+      cursor: pointer;
+    }
 
     .app {
       height: 100%;
       display: grid;
-      grid-template-rows: 56px 1fr 220px;
-      gap: 0;
+      grid-template-rows: var(--topbar-h) 1fr auto;
+      background: var(--bg);
     }
 
     .topbar {
       display: flex;
       align-items: center;
       justify-content: space-between;
+      gap: 16px;
+      padding: 0 18px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.01));
+      backdrop-filter: blur(10px);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
       gap: 12px;
-      padding: 0 14px;
-      border-bottom: 1px solid var(--border);
-      background: linear-gradient(180deg, rgba(255,255,255,.02), transparent);
+      min-width: 0;
+      flex: 0 1 auto;
     }
 
-    .brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
     .logo {
-      width: 32px; height: 32px; border-radius: 10px;
-      display: grid; place-items: center;
-      background: rgba(110,168,254,.12);
-      color: var(--accent); border: 1px solid rgba(110,168,254,.22);
-      font-weight: 700;
+      width: 40px;
+      height: 40px;
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      font-weight: 800;
+      color: white;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      box-shadow: 0 8px 20px rgba(88,166,255,0.18);
+      flex: 0 0 auto;
     }
-    .titlewrap { min-width: 0; }
-    .title { font-size: 14px; font-weight: 700; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .subtitle { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-    .toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
-    .btn {
-      border: 1px solid var(--border);
-      background: var(--panel);
-      color: var(--text);
-      padding: 8px 12px;
-      border-radius: 10px;
-      cursor: pointer;
-      display: inline-flex;
+    .brand-info {
+      min-width: 0;
+    }
+
+    .brand-title {
+      font-size: 15px;
+      font-weight: 700;
+      line-height: 1.2;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .brand-subtitle {
+      margin-top: 2px;
+      font-size: 12px;
+      color: var(--text-dim);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+      flex-wrap: wrap;
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    .group {
+      display: flex;
       align-items: center;
       gap: 8px;
+      padding-left: 10px;
+      border-left: 1px solid var(--line);
     }
-    .btn:hover { border-color: rgba(110,168,254,.35); }
-    .btn.primary { background: rgba(110,168,254,.14); border-color: rgba(110,168,254,.25); }
-    .btn.danger { background: rgba(255,107,107,.12); border-color: rgba(255,107,107,.25); }
-    .btn.small { padding: 6px 10px; font-size: 13px; }
-    .btn.active {
-      background: rgba(110,168,254,.2);
-      border-color: var(--accent);
+
+    .group:first-child {
+      border-left: 0;
+      padding-left: 0;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: var(--bg-elev);
+      color: var(--text);
+      font-weight: 600;
+      font-size: 13px;
+      transition: 180ms ease;
+      white-space: nowrap;
+      user-select: none;
+    }
+
+    .btn:hover {
+      border-color: var(--line-strong);
+      background: rgba(255,255,255,0.05);
+      transform: translateY(-1px);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .btn.primary {
+      background: rgba(88, 166, 255, 0.14);
+      border-color: rgba(88, 166, 255, 0.28);
+      color: #a8cfff;
+    }
+
+    .btn.primary:hover {
+      background: rgba(88, 166, 255, 0.2);
+    }
+
+    .btn.small {
+      padding: 7px 10px;
+      font-size: 12px;
     }
 
     .main {
-      display: grid;
-      grid-template-columns: 300px 1fr;
       min-height: 0;
+      display: grid;
+      grid-template-columns: var(--sidebar-w) 1fr;
     }
 
     .sidebar {
-      border-right: 1px solid var(--border);
-      background: var(--panel);
       min-height: 0;
       display: grid;
       grid-template-rows: auto 1fr auto;
+      background: var(--bg-panel);
+      border-right: 1px solid var(--line);
+      overflow: hidden;
     }
 
-    .sidebar-head, .sidebar-foot, .preview-head, .console-head {
-      padding: 12px;
-      border-bottom: 1px solid var(--border);
+    .section {
+      padding: 14px;
+      border-bottom: 1px solid var(--line);
     }
-    .sidebar-foot { border-top: 1px solid var(--border); border-bottom: 0; }
+
+    .section:last-child {
+      border-bottom: 0;
+      border-top: 1px solid var(--line);
+    }
+
+    .section-title {
+      margin-bottom: 10px;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      font-weight: 800;
+    }
 
     .search {
       width: 100%;
       padding: 10px 12px;
-      border-radius: 10px;
-      border: 1px solid var(--border);
-      background: var(--panel-2);
-      color: var(--text);
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.02);
       outline: none;
+      transition: 180ms ease;
     }
-    .search:focus { border-color: rgba(110,168,254,.4); }
+
+    .search:focus {
+      border-color: rgba(88,166,255,0.45);
+      box-shadow: 0 0 0 3px rgba(88,166,255,0.10);
+    }
 
     .tree {
+      min-height: 0;
       overflow: auto;
       padding: 8px 0 12px;
     }
 
-    .tree ul { list-style: none; margin: 0; padding: 0; }
+    .tree::-webkit-scrollbar,
+    .console-body::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    .tree::-webkit-scrollbar-thumb,
+    .console-body::-webkit-scrollbar-thumb {
+      background: var(--line-strong);
+      border-radius: 999px;
+    }
+
     .tree-item {
       display: flex;
       align-items: center;
       gap: 8px;
+      min-height: 36px;
       padding: 7px 12px;
+      margin: 0 8px;
+      border-radius: 10px;
       cursor: pointer;
       user-select: none;
-      font-size: 13px;
+      transition: 160ms ease;
     }
-    .tree-item:hover { background: rgba(255,255,255,.03); }
-    .tree-item.active { background: rgba(110,168,254,.12); }
-    .tree-item.folder { color: #d8e3ff; }
-    .tree-item.file { color: var(--text); }
-    .tree-indent { width: 16px; flex: 0 0 16px; }
-    .tree-caret { width: 14px; text-align: center; color: var(--muted); font-size: 11px; }
-    .tree-icon { width: 18px; text-align: center; }
-    .tree-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .tree-meta { margin-left: auto; color: var(--muted); font-size: 11px; font-family: var(--mono); }
+
+    .tree-item:hover {
+      background: rgba(88,166,255,0.10);
+    }
+
+    .tree-item.active {
+      background: rgba(88,166,255,0.18);
+      outline: 1px solid rgba(88,166,255,0.22);
+    }
+
+    .tree-caret {
+      width: 16px;
+      text-align: center;
+      color: var(--text-faint);
+      font-size: 11px;
+      flex: 0 0 16px;
+    }
+
+    .tree-icon {
+      width: 18px;
+      text-align: center;
+      flex: 0 0 18px;
+      font-size: 15px;
+    }
+
+    .tree-name {
+      min-width: 0;
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .tree-meta {
+      flex: 0 0 auto;
+      color: var(--text-faint);
+      font-size: 11px;
+      font-family: var(--mono);
+    }
+
+    .tree-empty {
+      padding: 18px 14px;
+      text-align: center;
+      color: var(--text-faint);
+      font-size: 12px;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .stat {
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: rgba(255,255,255,0.02);
+      text-align: center;
+    }
+
+    .stat strong {
+      display: block;
+      margin-bottom: 2px;
+      font-size: 14px;
+      color: var(--text);
+    }
+
+    .stat span {
+      font-size: 12px;
+      color: var(--text-dim);
+    }
 
     .preview-shell {
       min-width: 0;
+      min-height: 0;
       display: grid;
       grid-template-rows: auto 1fr;
-      min-height: 0;
+      background: var(--bg);
     }
-    .preview-head {
+
+    .preview-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 10px;
-      background: rgba(255,255,255,.01);
+      gap: 16px;
+      padding: 14px 18px;
+      min-height: var(--preview-header-h);
+      border-bottom: 1px solid var(--line);
+      background: rgba(255,255,255,0.015);
     }
-    .status {
-      min-width: 0;
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-    .status strong { font-size: 13px; }
-    .status span { font-size: 12px; color: var(--muted); }
 
-    .preview-frame-wrap {
+    .file-info {
+      min-width: 0;
+      flex: 1 1 auto;
+    }
+
+    .file-name {
+      font-size: 14px;
+      font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .file-path {
+      margin-top: 3px;
+      font-size: 12px;
+      color: var(--text-dim);
+      font-family: var(--mono);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .status-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      font-size: 12px;
+      color: var(--text-dim);
+      background: rgba(255,255,255,0.03);
+      white-space: nowrap;
+    }
+
+    .badge.ok {
+      color: var(--success);
+      border-color: rgba(63,185,80,0.25);
+      background: rgba(63,185,80,0.08);
+    }
+
+    .badge.warn {
+      color: var(--warning);
+      border-color: rgba(210,153,34,0.25);
+      background: rgba(210,153,34,0.08);
+    }
+
+    .badge.err {
+      color: var(--danger);
+      border-color: rgba(248,81,73,0.25);
+      background: rgba(248,81,73,0.08);
+    }
+
+    .preview-container {
       position: relative;
       min-height: 0;
+      overflow: hidden;
+      background: #ffffff;
+    }
+
+    .preview-frame-wrap {
+      position: absolute;
+      inset: 0;
+      background: #fff;
+    }
+
+    .preview-container.view-tablet {
+      display: flex;
+      justify-content: center;
+      align-items: stretch;
+      background: var(--bg);
+    }
+
+    .preview-container.view-mobile {
+      display: flex;
+      justify-content: center;
+      align-items: stretch;
+      background: var(--bg);
+    }
+
+    .preview-container.view-tablet .preview-frame-wrap {
+      position: relative;
+      width: min(768px, calc(100% - 40px));
+      margin: 20px auto;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .preview-container.view-mobile .preview-frame-wrap {
+      position: relative;
+      width: min(390px, calc(100% - 24px));
+      margin: 16px auto;
+      border: 1px solid var(--line);
+      border-radius: 26px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      background: #fff;
+    }
+
+    .preview-container.view-mobile .preview-frame-wrap::before {
+      content: '';
+      display: block;
+      height: 24px;
       background: #0b0d12;
     }
-    /* Viewport mode styling */
-    .preview-frame-wrap.view-desktop { }
-    .preview-frame-wrap.view-tablet {
-      width: 768px;
-      max-width: 100%;
-      margin: 0 auto;
-      border-left: 1px solid var(--border);
-      border-right: 1px solid var(--border);
-    }
-    .preview-frame-wrap.view-mobile {
-      width: 375px;
-      max-width: 100%;
-      margin: 0 auto;
-      border-left: 1px solid var(--border);
-      border-right: 1px solid var(--border);
-    }
+
     iframe#previewFrame {
       width: 100%;
       height: 100%;
@@ -181,57 +476,154 @@
       background: #fff;
       display: block;
     }
-    .empty {
-      position: absolute; inset: 0;
-      display: grid; place-items: center;
-      color: var(--muted);
+
+    .empty-state {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
       text-align: center;
-      padding: 24px;
+      padding: 32px;
+      background: linear-gradient(135deg, rgba(88,166,255,0.05), rgba(139,92,246,0.05));
+      color: var(--text-dim);
       pointer-events: none;
     }
 
+    .empty-card {
+      max-width: 520px;
+    }
+
+    .empty-ico {
+      font-size: 56px;
+      opacity: 0.7;
+      margin-bottom: 14px;
+    }
+
+    .empty-title {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+
+    .empty-desc {
+      font-size: 13px;
+      line-height: 1.65;
+    }
+
     .console {
-      border-top: 1px solid var(--border);
-      background: var(--panel);
       min-height: 0;
+      border-top: 1px solid var(--line);
+      background: var(--bg-elev);
       display: grid;
       grid-template-rows: auto 1fr;
     }
-    .console-head {
-      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+
+    .console.hidden { display: none; }
+
+    .console-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255,255,255,0.015);
     }
-    .console-title { font-weight: 700; font-size: 13px; }
+
+    .console-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .console-title::before {
+      content: '⌘';
+      color: var(--accent);
+      font-size: 14px;
+    }
+
     .console-body {
+      min-height: 0;
       overflow: auto;
+      padding: 12px 16px 16px;
       font-family: var(--mono);
       font-size: 12px;
-      padding: 10px 12px 16px;
     }
-    .log-row {
-      padding: 8px 10px;
-      border: 1px solid var(--border);
-      background: rgba(255,255,255,.02);
-      border-radius: 10px;
+
+    .log-entry {
+      padding: 10px 12px;
       margin-bottom: 8px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.02);
       white-space: pre-wrap;
       word-break: break-word;
     }
-    .log-row.log { border-color: rgba(110,168,254,.2); }
-    .log-row.info { border-color: rgba(110,168,254,.2); }
-    .log-row.warn { border-color: rgba(247,178,103,.25); }
-    .log-row.error { border-color: rgba(255,107,107,.25); }
-    .log-meta { color: var(--muted); margin-bottom: 4px; }
 
-    .badge { padding: 3px 8px; border-radius: 999px; font-size: 11px; background: rgba(255,255,255,.05); color: var(--muted); border: 1px solid var(--border); }
-    .badge.ok { color: var(--ok); border-color: rgba(96,211,148,.2); background: rgba(96,211,148,.08); }
-    .badge.warn { color: var(--warn); border-color: rgba(247,178,103,.2); background: rgba(247,178,103,.08); }
+    .log-entry.log { border-color: rgba(88,166,255,0.22); }
+    .log-entry.info { border-color: rgba(88,166,255,0.22); }
+    .log-entry.warn { border-color: rgba(210,153,34,0.28); background: rgba(210,153,34,0.06); }
+    .log-entry.error { border-color: rgba(248,81,73,0.28); background: rgba(248,81,73,0.06); }
+
+    .log-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 6px;
+      font-size: 11px;
+      color: var(--text-faint);
+    }
+
+    .log-level {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 7px;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .log-level.log,
+    .log-level.info {
+      color: var(--accent);
+      background: rgba(88,166,255,0.12);
+    }
+
+    .log-level.warn {
+      color: var(--warning);
+      background: rgba(210,153,34,0.12);
+    }
+
+    .log-level.error {
+      color: var(--danger);
+      background: rgba(248,81,73,0.12);
+    }
+
+    .log-content {
+      color: var(--text);
+    }
 
     .hidden { display: none !important; }
 
-    @media (max-width: 960px) {
+    @media (max-width: 1024px) {
       .main { grid-template-columns: 1fr; }
       .sidebar { display: none; }
-      .app { grid-template-rows: 56px 1fr 180px; }
+      :root { --console-h: 200px; }
+    }
+
+    @media (max-width: 720px) {
+      .topbar { padding: 0 12px; gap: 10px; }
+      .toolbar { gap: 8px; }
+      .group { padding-left: 8px; }
+      .btn { padding: 7px 10px; font-size: 12px; }
+      .preview-header { padding: 12px 14px; }
+      .console-header { padding: 10px 14px; }
     }
   </style>
 </head>
@@ -240,71 +632,82 @@
     <header class="topbar">
       <div class="brand">
         <div class="logo">F</div>
-        <div class="titlewrap">
-          <div class="title" id="workspaceTitle">ForgeEdit Preview</div>
-          <div class="subtitle" id="workspaceSubtitle">Loading workspace...</div>
+        <div class="brand-info">
+          <div class="brand-title" id="workspaceTitle">ForgeEdit Preview</div>
+          <div class="brand-subtitle" id="workspaceSubtitle">Memuat workspace…</div>
         </div>
-</div><div class="toolbar" style="display: flex; flex-direction: column; gap: 0;">
-  <div style="display: flex; gap: 8px; margin: 0; padding: 0; flex-wrap: wrap;">
-    <button class="btn small" id="btnBack" title="Back to workspace">← Workspace</button>
-    <button class="btn small" id="btnReload" title="Reload preview">Reload</button>
-    <button class="btn small" id="btnConsole" title="Toggle console">Console</button>
-    <button class="btn small primary" id="btnOpenDevtools" title="Open preview devtools panel">DevTools</button>
-  </div>
-  <div style="display: flex; gap: 8px; margin: 0; padding: 0; flex-wrap: wrap;">
-    <button class="btn small" id="btnViewDesktop" title="Desktop view (default)">Desktop</button>
-    <button class="btn small" id="btnViewTablet" title="Tablet view (768px)">Tablet</button>
-    <button class="btn small" id="btnViewMobile" title="Mobile view (375px)">Mobile</button>
-  </div>
-</div>
+      </div>
 
+      <div class="toolbar">
+        <div class="group">
+          <button class="btn small" id="btnBack" title="Kembali ke workspace">← Workspace</button>
+          <button class="btn small" id="btnReload" title="Reload preview">⟳ Reload</button>
+        </div>
+        <div class="group">
+          <button class="btn small" id="btnViewDesktop" title="Desktop view">Desktop</button>
+          <button class="btn small" id="btnViewTablet" title="Tablet view">Tablet</button>
+          <button class="btn small" id="btnViewMobile" title="Mobile view">Mobile</button>
+        </div>
+        <div class="group">
+          <button class="btn small" id="btnConsole" title="Toggle console">Console</button>
+          <button class="btn small primary" id="btnDevtools" title="Open DevTools panel">DevTools</button>
+        </div>
+      </div>
     </header>
 
-    <section class="main">
+    <main class="main">
       <aside class="sidebar">
-        <div class="sidebar-head">
-          <input id="searchInput" class="search" placeholder="Search path / file name" />
+        <div class="section">
+          <div class="section-title">Search</div>
+          <input id="searchInput" class="search" placeholder="Cari file atau folder" />
         </div>
+
         <div class="tree" id="fileTree"></div>
-        <div class="sidebar-foot">
-          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px;">
-            <span class="badge" id="fileCountBadge">0 files</span>
-            <span class="badge" id="folderCountBadge">0 folders</span>
+
+        <div class="section">
+          <div class="section-title">Statistics</div>
+          <div class="stats">
+            <div class="stat"><strong id="fileCount">0</strong><span>Files</span></div>
+            <div class="stat"><strong id="folderCount">0</strong><span>Folders</span></div>
           </div>
-          <button class="btn small primary" id="btnOpenActive">Open Active File</button>
+          <button class="btn primary" id="btnOpenActive" style="width:100%; justify-content:center;">Open Active File</button>
         </div>
       </aside>
 
       <section class="preview-shell">
-        <div class="preview-head">
-          <div class="status">
-            <strong id="activeFileTitle">No file selected</strong>
-            <span id="activeFilePath">Select an index.html or any file from the tree</span>
+        <div class="preview-header">
+          <div class="file-info">
+            <div class="file-name" id="activeFileTitle">No file selected</div>
+            <div class="file-path" id="activeFilePath">Pilih file dari sidebar untuk preview</div>
           </div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;align-items:center;">
-            <span class="badge" id="runtimeBadge">idle</span>
+          <div class="status-row">
+            <span class="badge" id="runtimeBadge">Idle</span>
             <span class="badge" id="rootBadge">root: /</span>
           </div>
         </div>
-        <div class="preview-frame-wrap view-desktop" id="previewFrameWrap">
-          <iframe id="previewFrame" sandbox="allow-scripts allow-forms allow-modals allow-pointer-lock allow-popups"></iframe>
-          <div class="empty" id="emptyState">
-            <div>
-              <div style="font-size:18px;font-weight:700;margin-bottom:6px;">Preview belum jalan</div>
-              <div style="max-width:560px;line-height:1.6;">
-                ForgeEditDB terbaca, tapi belum ada file aktif. Klik file di sidebar, atau biarkan preview mencari <code>index.html</code> di root workspace.
+
+        <div class="preview-container view-desktop" id="previewContainer">
+          <div class="preview-frame-wrap">
+            <iframe id="previewFrame" sandbox="allow-scripts allow-forms allow-modals allow-pointer-lock allow-popups allow-same-origin"></iframe>
+          </div>
+          <div class="empty-state" id="emptyState">
+            <div class="empty-card">
+              <div class="empty-ico">📄</div>
+              <div class="empty-title">Preview belum aktif</div>
+              <div class="empty-desc">
+                Pilih file di sidebar, atau biarkan sistem mencari <code>index.html</code> pada root workspace. Preview ini membaca langsung dari <code>ForgeEditDB</code>.
               </div>
             </div>
           </div>
         </div>
       </section>
-    </section>
+    </main>
 
     <section class="console hidden" id="consolePanel">
-      <div class="console-head">
+      <div class="console-header">
         <div class="console-title">Preview Console</div>
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-          <span class="badge" id="consoleCountBadge">0 logs</span>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <span class="badge" id="consoleCount">0 logs</span>
           <button class="btn small" id="btnClearConsole">Clear</button>
         </div>
       </div>
@@ -313,35 +716,43 @@
   </div>
 
   <script>
-    const DB_NAME = 'ForgeEditDB';
-    const DB_VER = 1;
-    const STORE = 'files';
+    const CONFIG = {
+      DB_NAME: 'ForgeEditDB',
+      DB_VERSION: 1,
+      STORE_NAME: 'files',
+      MAX_LOGS: 400,
+      BLOB_REVOKE_DELAY: 0,
+    };
 
-    const els = {
-      tree: document.getElementById('fileTree'),
-      search: document.getElementById('searchInput'),
-      frame: document.getElementById('previewFrame'),
-      empty: document.getElementById('emptyState'),
-      title: document.getElementById('workspaceTitle'),
-      subtitle: document.getElementById('workspaceSubtitle'),
-      activeTitle: document.getElementById('activeFileTitle'),
-      activePath: document.getElementById('activeFilePath'),
-      runtime: document.getElementById('runtimeBadge'),
+    const DOM = {
+      fileTree: document.getElementById('fileTree'),
+      searchInput: document.getElementById('searchInput'),
+      previewFrame: document.getElementById('previewFrame'),
+      previewContainer: document.getElementById('previewContainer'),
+      emptyState: document.getElementById('emptyState'),
+      workspaceTitle: document.getElementById('workspaceTitle'),
+      workspaceSubtitle: document.getElementById('workspaceSubtitle'),
+      activeFileTitle: document.getElementById('activeFileTitle'),
+      activeFilePath: document.getElementById('activeFilePath'),
+      runtimeBadge: document.getElementById('runtimeBadge'),
       rootBadge: document.getElementById('rootBadge'),
-      fileCount: document.getElementById('fileCountBadge'),
-      folderCount: document.getElementById('folderCountBadge'),
+      fileCount: document.getElementById('fileCount'),
+      folderCount: document.getElementById('folderCount'),
       consolePanel: document.getElementById('consolePanel'),
       consoleBody: document.getElementById('consoleBody'),
-      consoleCount: document.getElementById('consoleCountBadge'),
+      consoleCount: document.getElementById('consoleCount'),
       btnBack: document.getElementById('btnBack'),
       btnReload: document.getElementById('btnReload'),
       btnConsole: document.getElementById('btnConsole'),
-      btnDevtools: document.getElementById('btnOpenDevtools'),
+      btnDevtools: document.getElementById('btnDevtools'),
       btnOpenActive: document.getElementById('btnOpenActive'),
       btnClearConsole: document.getElementById('btnClearConsole'),
+      btnViewDesktop: document.getElementById('btnViewDesktop'),
+      btnViewTablet: document.getElementById('btnViewTablet'),
+      btnViewMobile: document.getElementById('btnViewMobile'),
     };
 
-    const state = {
+    const STATE = {
       db: null,
       files: [],
       tree: null,
@@ -349,35 +760,23 @@
       root: getQueryParam('root') || '/',
       startFile: getQueryParam('file') || null,
       logs: [],
-      channel: null,
-      previewSource: null,
+      previewUrl: null,
+      currentView: localStorage.getItem('forge-preview-view') || 'desktop',
+      isLoading: false,
     };
 
     function getQueryParam(name) {
-      const u = new URL(location.href);
-      return u.searchParams.get(name);
+      try {
+        return new URL(location.href).searchParams.get(name);
+      } catch {
+        return null;
+      }
     }
 
-    function setStatus(text, kind = 'idle') {
-      els.runtime.textContent = text;
-      els.runtime.className = 'badge ' + (kind === 'ok' ? 'ok' : kind === 'warn' ? 'warn' : '');
-    }
-
-    function fmtBytes(bytes) {
-      if (!Number.isFinite(bytes)) return '';
-      const u = ['B', 'KB', 'MB', 'GB'];
-      let i = 0, v = bytes;
-      while (v >= 1024 && i < u.length - 1) { v /= 1024; i++; }
-      return `${v.toFixed(i === 0 ? 0 : 1)} ${u[i]}`;
-    }
-
-    function escapeHtml(str) {
-      return String(str ?? '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
+    function normalizeRoot(root) {
+      const r = String(root || '/').trim();
+      if (!r || r === '/' || r === '.') return '/';
+      return r.replace(/^\/+/, '').replace(/\/+$/, '');
     }
 
     function getFileName(path) {
@@ -392,83 +791,87 @@
       return i > 0 ? p.slice(0, i) : '/';
     }
 
-    function getExt(name) {
+    function getExtension(name) {
       const n = String(name || '');
       const i = n.lastIndexOf('.');
       return i > 0 ? n.slice(i + 1).toLowerCase() : '';
     }
 
     function isImageFile(name) {
-      return ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'ico', 'bmp'].includes(getExt(name));
+      return ['png','jpg','jpeg','gif','webp','svg','ico','bmp'].includes(getExtension(name));
     }
 
-    function isTextFile(name) {
-      const ext = getExt(name);
-      return ['html', 'htm', 'css', 'js', 'mjs', 'json', 'txt', 'md', 'markdown', 'xml', 'yaml', 'yml', 'toml', 'svg', 'ts', 'tsx', 'jsx', 'py', 'java', 'c', 'cpp', 'h', 'sh', 'bash', 'env', 'ini', 'conf'].includes(ext);
+    function escapeHtml(value) {
+      const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+      return String(value ?? '').replace(/[&<>"']/g, (c) => map[c]);
+    }
+
+    function setStatus(text, state = 'idle') {
+      const cls = state === 'ok' ? 'ok' : state === 'warn' ? 'warn' : state === 'error' ? 'err' : '';
+      DOM.runtimeBadge.className = 'badge' + (cls ? ' ' + cls : '');
+      DOM.runtimeBadge.textContent = text;
+    }
+
+    function formatBytes(bytes) {
+      if (!Number.isFinite(bytes)) return '';
+      const units = ['B', 'KB', 'MB', 'GB'];
+      let v = bytes;
+      let i = 0;
+      while (v >= 1024 && i < units.length - 1) {
+        v /= 1024;
+        i += 1;
+      }
+      return `${v.toFixed(i === 0 ? 0 : 1)} ${units[i]}`;
     }
 
     function openDB() {
       return new Promise((resolve, reject) => {
-        const req = indexedDB.open(DB_NAME, DB_VER);
+        const req = indexedDB.open(CONFIG.DB_NAME, CONFIG.DB_VERSION);
         req.onupgradeneeded = (e) => {
           const db = e.target.result;
-          if (!db.objectStoreNames.contains('files')) {
-            const s = db.createObjectStore('files', { keyPath: 'path' });
-            s.createIndex('parent', 'parent', { unique: false });
-            s.createIndex('type', 'type', { unique: false });
-            s.createIndex('modified', 'modified', { unique: false });
+          if (!db.objectStoreNames.contains(CONFIG.STORE_NAME)) {
+            const store = db.createObjectStore(CONFIG.STORE_NAME, { keyPath: 'path' });
+            store.createIndex('parent', 'parent', { unique: false });
+            store.createIndex('type', 'type', { unique: false });
+            store.createIndex('modified', 'modified', { unique: false });
           }
         };
         req.onsuccess = () => resolve(req.result);
-        req.onerror = () => reject(req.error);
+        req.onerror = () => reject(req.error || new Error('Failed to open IndexedDB'));
       });
     }
 
     function tx(store, mode = 'readonly') {
-      return state.db.transaction(store, mode).objectStore(store);
+      return STATE.db.transaction(store, mode).objectStore(store);
     }
 
     function getAllFiles() {
       return new Promise((resolve, reject) => {
-        const req = tx(STORE).getAll();
+        const req = tx(CONFIG.STORE_NAME).getAll();
         req.onsuccess = () => resolve(req.result || []);
         req.onerror = () => reject(req.error);
       });
     }
 
-    function getFile(path) {
-      return new Promise((resolve, reject) => {
-        const req = tx(STORE).get(path);
-        req.onsuccess = () => resolve(req.result || null);
-        req.onerror = () => reject(req.error);
-      });
-    }
-
-    function getByIndex(idx, val) {
-      return new Promise((resolve, reject) => {
-        const req = tx(STORE).index(idx).getAll(val);
-        req.onsuccess = () => resolve(req.result || []);
-        req.onerror = () => reject(req.error);
-      });
-    }
-
-    function guessRootPaths(files, root) {
-      const rootClean = normalizeRoot(root);
-      return files.filter(f => {
+    function filterFilesByRoot(files, root) {
+      const rootNorm = normalizeRoot(root);
+      if (rootNorm === '/') return files;
+      return files.filter((f) => {
         const p = String(f.path || '');
-        if (rootClean === '/') return true;
-        return p === rootClean || p.startsWith(rootClean + '/');
+        return p === rootNorm || p.startsWith(rootNorm + '/');
       });
     }
 
-    function normalizeRoot(root) {
-      const r = String(root || '/').trim();
-      if (!r || r === '/' || r === '.') return '/';
-      return r.replace(/^\/+/, '').replace(/\/+$/, '');
-    }
+    function buildFileTree(files) {
+      const root = {
+        name: '/',
+        path: '/',
+        type: 'folder',
+        open: true,
+        children: new Map(),
+        data: null,
+      };
 
-    function buildTree(files) {
-      const root = { name: '/', path: '/', type: 'folder', open: true, children: new Map(), data: null };
       const sorted = [...files].sort((a, b) => {
         if (a.type !== b.type) return a.type === 'folder' ? -1 : 1;
         return String(a.path).localeCompare(String(b.path));
@@ -477,9 +880,11 @@
       for (const f of sorted) {
         const parts = String(f.path || '').split('/').filter(Boolean);
         let node = root;
+
         for (let i = 0; i < parts.length; i++) {
           const part = parts[i];
           const isLast = i === parts.length - 1;
+
           if (!node.children.has(part)) {
             node.children.set(part, {
               name: part,
@@ -490,6 +895,7 @@
               data: isLast ? f : null,
             });
           }
+
           const next = node.children.get(part);
           if (isLast) {
             next.type = f.type;
@@ -499,45 +905,8 @@
           node = next;
         }
       }
+
       return root;
-    }
-
-    function renderTree(node, depth = 0, filter = '') {
-      const entries = [...node.children.values()].sort((a, b) => {
-        if (a.type !== b.type) return a.type === 'folder' ? -1 : 1;
-        return a.name.localeCompare(b.name);
-      });
-      const q = filter.trim().toLowerCase();
-      const html = [];
-
-      for (const entry of entries) {
-        const isFolder = entry.type === 'folder';
-        const hasChildren = entry.children.size > 0;
-        const visible = !q || entry.path.toLowerCase().includes(q) || entry.name.toLowerCase().includes(q);
-        if (!visible && isFolder) {
-          const childMatch = subtreeHasMatch(entry, q);
-          if (!childMatch) continue;
-        } else if (!visible) {
-          continue;
-        }
-
-        const isActive = state.activePath === entry.path;
-        const caret = isFolder ? (entry.open ? '▾' : '▸') : '•';
-        const icon = isFolder ? (entry.open ? '📂' : '📁') : iconFor(entry.name);
-        html.push(`
-          <div class="tree-item ${isFolder ? 'folder' : 'file'} ${isActive ? 'active' : ''}" data-path="${escapeHtml(entry.path)}" data-type="${entry.type}" style="padding-left:${12 + depth * 16}px">
-            <div class="tree-caret">${caret}</div>
-            <div class="tree-icon">${icon}</div>
-            <div class="tree-name">${escapeHtml(entry.name)}</div>
-            <div class="tree-meta">${isFolder ? entry.children.size : (entry.data && typeof entry.data.size === 'number' ? fmtBytes(entry.data.size) : '')}</div>
-          </div>
-        `);
-
-        if (isFolder && entry.open && hasChildren) {
-          html.push(renderTree(entry, depth + 1, filter));
-        }
-      }
-      return html.join('');
     }
 
     function subtreeHasMatch(node, q) {
@@ -549,214 +918,78 @@
       return false;
     }
 
-    function iconFor(name) {
-      const ext = getExt(name);
+    function findNodeByPath(node, path) {
+      if (node.path === path) return node;
+      for (const child of node.children.values()) {
+        const hit = findNodeByPath(child, path);
+        if (hit) return hit;
+      }
+      return null;
+    }
+
+    function getFileIcon(name) {
+      const ext = getExtension(name);
       const map = {
-        html: '🌐', htm: '🌐', css: '🎨', js: '🔥', mjs: '🔥', ts: '🟦', tsx: '🟦', jsx: '🧩',
-        json: '🧾', md: '📝', txt: '📄', xml: '📄', yml: '📄', yaml: '📄', toml: '📄',
-        py: '🐍', java: '☕', c: '🧷', cpp: '🧷', h: '🧷', sh: '🐚', svg: '🖼️', png: '🖼️', jpg: '🖼️', jpeg: '🖼️', gif: '🖼️', webp: '🖼️'
+        html: '🌐', htm: '🌐', css: '🎨', js: '⚡', mjs: '⚡', ts: '🔵', tsx: '🔵', jsx: '⚛️',
+        json: '📋', md: '📝', txt: '📄', xml: '📄', yml: '⚙️', yaml: '⚙️', toml: '⚙️',
+        py: '🐍', java: '☕', c: '🔧', cpp: '🔧', h: '🔧', sh: '🐚', svg: '🖼️', png: '🖼️', jpg: '🖼️', jpeg: '🖼️', gif: '🖼️', webp: '🖼️'
       };
       return map[ext] || '📄';
     }
 
-    function logToConsole(level, args) {
-      const row = { level, args: args.map(x => serializeArg(x)), time: new Date() };
-      state.logs.push(row);
-      renderConsole();
-    }
+    function renderTree(node, depth = 0, filter = '') {
+      const entries = [...node.children.values()].sort((a, b) => {
+        if (a.type !== b.type) return a.type === 'folder' ? -1 : 1;
+        return a.name.localeCompare(b.name);
+      });
 
-    function serializeArg(v) {
-      if (typeof v === 'string') return v;
-      if (typeof v === 'number' || typeof v === 'boolean') return String(v);
-      if (v instanceof Error) return v.stack || v.message;
-      try { return JSON.stringify(v, null, 2); } catch { return String(v); }
-    }
+      const q = filter.trim().toLowerCase();
+      let out = '';
 
-    function renderConsole() {
-      els.consoleCount.textContent = `${state.logs.length} logs`;
-      els.consoleBody.innerHTML = state.logs.map((l, idx) => `
-        <div class="log-row ${escapeHtml(l.level)}">
-          <div class="log-meta">${idx + 1}. ${escapeHtml(l.level.toUpperCase())} · ${escapeHtml(l.time.toLocaleTimeString())}</div>
-          <div>${escapeHtml(l.args.join(' '))}</div>
-        </div>
-      `).join('');
-      els.consoleBody.scrollTop = els.consoleBody.scrollHeight;
-    }
+      for (const entry of entries) {
+        const isFolder = entry.type === 'folder';
+        const hasChildren = entry.children.size > 0;
+        const visible = !q || entry.path.toLowerCase().includes(q) || entry.name.toLowerCase().includes(q);
 
-    function clearConsole() {
-      state.logs = [];
-      renderConsole();
-    }
+        if (!visible && isFolder) {
+          if (!subtreeHasMatch(entry, q)) continue;
+        } else if (!visible) {
+          continue;
+        }
 
-    function inferEntryPoint(files) {
-      const rootClean = normalizeRoot(state.root);
-      const scoped = guessRootPaths(files, rootClean);
+        const isActive = STATE.activePath === entry.path;
+        const caret = isFolder ? (entry.open ? '▾' : '▸') : '•';
+        const icon = isFolder ? (entry.open ? '📂' : '📁') : getFileIcon(entry.name);
+        const meta = isFolder ? `${entry.children.size}` : (entry.data && typeof entry.data.size === 'number' ? formatBytes(entry.data.size) : '');
 
-      if (state.startFile) {
-        const startFile = String(state.startFile).replace(/^\/+/, '');
-        const exact = scoped.find(f => f.path === startFile);
-        if (exact) return exact.path;
-      }
+        out += `
+          <div class="tree-item ${isFolder ? 'folder' : 'file'} ${isActive ? 'active' : ''}" data-path="${escapeHtml(entry.path)}" data-type="${entry.type}" style="padding-left:${12 + depth * 14}px">
+            <div class="tree-caret">${caret}</div>
+            <div class="tree-icon">${icon}</div>
+            <div class="tree-name">${escapeHtml(entry.name)}</div>
+            ${meta ? `<div class="tree-meta">${escapeHtml(meta)}</div>` : ''}
+          </div>
+        `;
 
-      const candidates = [
-        `${rootClean === '/' ? '' : rootClean}/index.html`.replace(/^\//, ''),
-        `${rootClean === '/' ? '' : rootClean}/main.html`.replace(/^\//, ''),
-        `${rootClean === '/' ? '' : rootClean}/app.html`.replace(/^\//, ''),
-      ].filter(Boolean);
-      for (const c of candidates) {
-        const hit = scoped.find(f => f.path === c);
-        if (hit) return hit.path;
-      }
-      const html = scoped.find(f => f.type === 'file' && ['html', 'htm'].includes(getExt(f.name)));
-      if (html) return html.path;
-      return scoped.find(f => f.type === 'file')?.path || null;
-    }
-
-    function collectAssetMap(files) {
-      const map = new Map();
-      for (const f of files) {
-        if (f.type !== 'file') continue;
-        map.set(f.path, f);
-      }
-      return map;
-    }
-
-    function pathResolve(fromPath, relativePath) {
-      if (!relativePath || /^(https?:|data:|blob:|about:|javascript:)/i.test(relativePath)) return relativePath;
-      if (relativePath.startsWith('/')) return relativePath.replace(/^\/+/, '');
-      const fromDir = getParentPath(fromPath).split('/').filter(Boolean);
-      const rel = relativePath.split('/');
-      const out = [...fromDir];
-      for (const seg of rel) {
-        if (!seg || seg === '.') continue;
-        if (seg === '..') out.pop();
-        else out.push(seg);
-      }
-      return out.join('/');
-    }
-
-    function getBlobUrl(file) {
-      const content = String(file.content ?? '');
-      const ext = getExt(file.name);
-      const typeMap = {
-        html: 'text/html', htm: 'text/html', css: 'text/css', js: 'application/javascript', mjs: 'application/javascript', json: 'application/json',
-        svg: 'image/svg+xml', md: 'text/markdown', txt: 'text/plain', xml: 'application/xml', yml: 'text/yaml', yaml: 'text/yaml',
-        png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif', webp: 'image/webp', ico: 'image/x-icon',
-        woff: 'font/woff', woff2: 'font/woff2', ttf: 'font/ttf', otf: 'font/otf'
-      };
-      return URL.createObjectURL(new Blob([content], { type: typeMap[ext] || 'text/plain' }));
-    }
-
-    function rewriteHtml(html, entryPath, fileMap, rootFiles) {
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(html, 'text/html');
-
-      const nodes = [
-        ...doc.querySelectorAll('img[src], script[src], link[href], source[src], video[src], audio[src], iframe[src]')
-      ];
-
-      for (const el of nodes) {
-        const attr = el.hasAttribute('src') ? 'src' : 'href';
-        const raw = el.getAttribute(attr);
-        if (!raw || /^(https?:|data:|blob:|javascript:|about:)/i.test(raw)) continue;
-        const resolved = pathResolve(entryPath, raw);
-        const file = fileMap.get(resolved);
-        if (!file) continue;
-        if (isImageFile(file.name) || ['svg', 'css', 'js', 'mjs', 'html', 'htm', 'json', 'txt'].includes(getExt(file.name))) {
-          const blobUrl = getBlobUrl(file);
-          el.setAttribute(attr, blobUrl);
+        if (isFolder && entry.open && hasChildren) {
+          out += renderTree(entry, depth + 1, filter);
         }
       }
 
-      const styles = [...doc.querySelectorAll('style')];
-      for (const st of styles) {
-        // leave inline style intact
-        void st;
-      }
-
-      const bootstrap = `
-        <script>
-          (function(){
-            const send = (type, level, args) => parent.postMessage({ __forgePreview: true, type, level, args: args.map(a => {
-              try { return typeof a === 'string' ? a : JSON.stringify(a); } catch(e) { return String(a); }
-            }) }, '*');
-            ['log','info','warn','error','debug'].forEach(fn => {
-              const orig = console[fn];
-              console[fn] = function(...args){ send('console', fn, args); try { return orig.apply(console, args); } catch(e){} };
-            });
-            window.addEventListener('error', (e) => send('console', 'error', [e.message, e.filename + ':' + e.lineno + ':' + e.colno]));
-            window.addEventListener('unhandledrejection', (e) => send('console', 'error', ['Unhandled rejection', e.reason]));
-          })();
-        <\/script>`;
-
-      const body = doc.body || doc.documentElement;
-      if (body) body.insertAdjacentHTML('beforeend', bootstrap);
-
-      return '<!DOCTYPE html>\n' + doc.documentElement.outerHTML;
-    }
-
-    function buildPreviewDoc(entryPath, files, fileMap) {
-      const entry = fileMap.get(entryPath);
-      if (!entry) {
-        return `<!DOCTYPE html><html><body style="font-family:system-ui;padding:24px"><h2>File tidak ditemukan</h2><p>${escapeHtml(entryPath)}</p></body></html>`;
-      }
-
-      const ext = getExt(entry.name);
-      if (isImageFile(entry.name)) {
-        const url = getBlobUrl(entry);
-        return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>html,body{height:100%;margin:0;background:#111;display:grid;place-items:center}img{max-width:100%;max-height:100%;object-fit:contain}</style></head><body><img src="${url}" alt="${escapeHtml(entry.name)}"></body></html>`;
-      }
-
-      if (ext === 'svg') {
-        return String(entry.content ?? '');
-      }
-
-      if (['html', 'htm'].includes(ext)) {
-        return rewriteHtml(String(entry.content ?? ''), entryPath, fileMap, files);
-      }
-
-      if (ext === 'md' || ext === 'markdown') {
-        const safe = escapeHtml(String(entry.content ?? ''));
-        return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{font-family:system-ui;max-width:900px;margin:40px auto;padding:0 20px;line-height:1.7}pre{white-space:pre-wrap;background:#111;color:#eee;padding:16px;border-radius:12px;overflow:auto}</style></head><body><pre>${safe}</pre></body></html>`;
-      }
-
-      if (['js', 'mjs'].includes(ext)) {
-        const code = String(entry.content ?? '');
-        return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{font-family:system-ui;padding:24px}pre{white-space:pre-wrap;background:#111;color:#eee;padding:16px;border-radius:12px;overflow:auto}</style></head><body><h3>JavaScript file</h3><pre>${escapeHtml(code)}</pre></body></html>`;
-      }
-
-      if (['css'].includes(ext)) {
-        return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>${String(entry.content ?? '')}</style></head><body style="font-family:system-ui;padding:24px"><h3>CSS file</h3><p>Preview menampilkan isi stylesheet.</p></body></html>`;
-      }
-
-      if (['json', 'txt', 'yml', 'yaml', 'xml', 'toml'].includes(ext)) {
-        return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{font-family:ui-monospace,monospace;padding:24px;white-space:pre-wrap;background:#fff;color:#111}</style></head><body>${escapeHtml(String(entry.content ?? ''))}</body></html>`;
-      }
-
-      return `<!DOCTYPE html><html><body style="font-family:system-ui;padding:24px"><h3>Unsupported preview type</h3><p>${escapeHtml(entry.name)}</p><pre style="white-space:pre-wrap">${escapeHtml(String(entry.content ?? ''))}</pre></body></html>`;
-    }
-
-    function renderWorkspaceInfo() {
-      const root = normalizeRoot(state.root);
-      const rootLabel = root === '/' ? '/' : '/' + root;
-      els.rootBadge.textContent = `root: ${rootLabel}`;
-      const scope = guessRootPaths(state.files, root);
-      const files = scope.filter(f => f.type === 'file').length;
-      const folders = scope.filter(f => f.type === 'folder').length;
-      els.fileCount.textContent = `${files} files`;
-      els.folderCount.textContent = `${folders} folders`;
-      els.subtitle.textContent = `ForgeEditDB · files/${scope.length} nodes · ${location.pathname.split('/').pop() || 'preview.html'}`;
+      return out;
     }
 
     function renderTreeNow() {
-      const q = els.search.value || '';
-      els.tree.innerHTML = renderTree(state.tree, 0, q) || '<div style="padding:14px;color:var(--muted)">No files found.</div>';
-      els.tree.querySelectorAll('.tree-item').forEach(el => {
+      const q = DOM.searchInput.value || '';
+      const html = renderTree(STATE.tree, 0, q);
+      DOM.fileTree.innerHTML = html || '<div class="tree-empty">No files found</div>';
+
+      DOM.fileTree.querySelectorAll('.tree-item').forEach((el) => {
         el.addEventListener('click', async () => {
           const path = el.dataset.path;
           const type = el.dataset.type;
           if (type === 'folder') {
-            const folder = findNodeByPath(state.tree, path);
+            const folder = findNodeByPath(STATE.tree, path);
             if (folder) {
               folder.open = !folder.open;
               renderTreeNow();
@@ -768,76 +1001,280 @@
       });
     }
 
-    function findNodeByPath(node, path) {
-      if (node.path === path) return node;
-      for (const child of node.children.values()) {
-        const hit = findNodeByPath(child, path);
-        if (hit) return hit;
+    function renderWorkspaceInfo() {
+      const root = normalizeRoot(STATE.root);
+      const rootLabel = root === '/' ? '/' : '/' + root;
+      DOM.rootBadge.textContent = `root: ${rootLabel}`;
+
+      const scope = filterFilesByRoot(STATE.files, root);
+      DOM.fileCount.textContent = scope.filter((f) => f.type === 'file').length;
+      DOM.folderCount.textContent = scope.filter((f) => f.type === 'folder').length;
+      DOM.workspaceSubtitle.textContent = `ForgeEditDB · ${scope.length} nodes`;
+    }
+
+    function addLog(level, args) {
+      STATE.logs.push({
+        level,
+        args: args.map((x) => serializeValue(x)),
+        time: new Date(),
+      });
+      if (STATE.logs.length > CONFIG.MAX_LOGS) STATE.logs.shift();
+      renderConsole();
+    }
+
+    function serializeValue(v) {
+      if (typeof v === 'string') return v;
+      if (typeof v === 'number' || typeof v === 'boolean') return String(v);
+      if (v instanceof Error) return v.stack || v.message;
+      try { return JSON.stringify(v, null, 2); } catch { return String(v); }
+    }
+
+    function renderConsole() {
+      DOM.consoleCount.textContent = `${STATE.logs.length} logs`;
+      DOM.consoleBody.innerHTML = STATE.logs.map((log) => `
+        <div class="log-entry ${escapeHtml(log.level)}">
+          <div class="log-meta">
+            <span class="log-level ${escapeHtml(log.level)}">${escapeHtml(log.level.toUpperCase())}</span>
+            <span>${escapeHtml(log.time.toLocaleTimeString('id-ID'))}</span>
+          </div>
+          <div class="log-content">${escapeHtml(log.args.join(' '))}</div>
+        </div>
+      `).join('');
+      DOM.consoleBody.scrollTop = DOM.consoleBody.scrollHeight;
+    }
+
+    function clearConsole() {
+      STATE.logs = [];
+      renderConsole();
+    }
+
+    function attachConsoleBridge() {
+      window.addEventListener('message', (ev) => {
+        const data = ev.data;
+        if (!data || !data.__forgePreview) return;
+        if (data.type === 'console') {
+          addLog(data.level || 'log', data.args || []);
+        }
+      });
+    }
+
+    function collectAssetMap(files) {
+      const map = new Map();
+      for (const f of files) {
+        if (f.type === 'file') map.set(f.path, f);
       }
-      return null;
+      return map;
+    }
+
+    function pathResolve(fromPath, relativePath) {
+      if (!relativePath || /^(https?:|data:|blob:|about:|javascript:)/i.test(relativePath)) return relativePath;
+      if (relativePath.startsWith('/')) return relativePath.replace(/^\/+/, '');
+
+      const fromDir = getParentPath(fromPath).split('/').filter(Boolean);
+      const rel = relativePath.split('/');
+      const out = [...fromDir];
+
+      for (const seg of rel) {
+        if (!seg || seg === '.') continue;
+        if (seg === '..') out.pop();
+        else out.push(seg);
+      }
+      return out.join('/');
+    }
+
+    function getBlobUrl(file) {
+      const content = String(file.content ?? '');
+      const ext = getExtension(file.name);
+      const typeMap = {
+        html: 'text/html', htm: 'text/html', css: 'text/css', js: 'application/javascript', mjs: 'application/javascript',
+        json: 'application/json', svg: 'image/svg+xml', md: 'text/markdown', txt: 'text/plain', xml: 'application/xml',
+        yml: 'text/yaml', yaml: 'text/yaml', png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif',
+        webp: 'image/webp', ico: 'image/x-icon', woff: 'font/woff', woff2: 'font/woff2', ttf: 'font/ttf', otf: 'font/otf'
+      };
+      return URL.createObjectURL(new Blob([content], { type: typeMap[ext] || 'text/plain' }));
+    }
+
+    function rewriteHtml(html, entryPath, fileMap) {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, 'text/html');
+
+      // inject early bootstrap for console/error capture
+      const bootstrap = `
+        <script>
+          (function(){
+            const send = (type, level, args) => parent.postMessage({ __forgePreview: true, type, level, args: args.map(a => {
+              try { return typeof a === 'string' ? a : JSON.stringify(a); } catch (e) { return String(a); }
+            }) }, '*');
+            ['log','info','warn','error','debug'].forEach(function(fn){
+              const orig = console[fn];
+              console[fn] = function(...args){
+                send('console', fn, args);
+                try { return orig.apply(console, args); } catch (e) {}
+              };
+            });
+            window.addEventListener('error', function(e){
+              send('console', 'error', [e.message, e.filename + ':' + e.lineno + ':' + e.colno]);
+            });
+            window.addEventListener('unhandledrejection', function(e){
+              send('console', 'error', ['Unhandled rejection', e.reason]);
+            });
+          })();
+        <\/script>`;
+
+      if (doc.head) {
+        doc.head.insertAdjacentHTML('afterbegin', bootstrap);
+      } else if (doc.documentElement) {
+        doc.documentElement.insertAdjacentHTML('afterbegin', bootstrap);
+      }
+
+      const nodes = [...doc.querySelectorAll('img[src], script[src], link[href], source[src], video[src], audio[src], iframe[src]')];
+      for (const el of nodes) {
+        const attr = el.hasAttribute('src') ? 'src' : 'href';
+        const raw = el.getAttribute(attr);
+        if (!raw || /^(https?:|data:|blob:|javascript:|about:)/i.test(raw)) continue;
+
+        const resolved = pathResolve(entryPath, raw);
+        const file = fileMap.get(resolved);
+        if (!file) continue;
+
+        if (isImageFile(file.name) || ['svg', 'css', 'js', 'mjs', 'html', 'htm', 'json', 'txt'].includes(getExtension(file.name))) {
+          el.setAttribute(attr, getBlobUrl(file));
+        }
+      }
+
+      return '<!DOCTYPE html>\n' + doc.documentElement.outerHTML;
+    }
+
+    function buildPreviewDoc(entryPath, files, fileMap) {
+      const entry = fileMap.get(entryPath);
+      if (!entry) {
+        return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{font-family:system-ui;padding:24px;background:#fff;color:#111}</style></head><body><h2>File tidak ditemukan</h2><p><code>${escapeHtml(entryPath)}</code></p></body></html>`;
+      }
+
+      const ext = getExtension(entry.name);
+
+      if (isImageFile(entry.name)) {
+        const url = getBlobUrl(entry);
+        return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>html,body{height:100%;margin:0;background:#0f1118;display:grid;place-items:center}img{max-width:100%;max-height:100%;object-fit:contain}</style></head><body><img src="${url}" alt="${escapeHtml(entry.name)}"></body></html>`;
+      }
+
+      if (ext === 'svg') {
+        return String(entry.content ?? '');
+      }
+
+      if (['html', 'htm'].includes(ext)) {
+        return rewriteHtml(String(entry.content ?? ''), entryPath, fileMap);
+      }
+
+      if (['md', 'markdown'].includes(ext)) {
+        return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{font-family:system-ui;max-width:900px;margin:40px auto;padding:0 20px;line-height:1.75;background:#fff;color:#111}pre{white-space:pre-wrap;background:#f3f4f6;padding:16px;border-radius:12px;overflow:auto;border:1px solid #e5e7eb}</style></head><body><pre>${escapeHtml(String(entry.content ?? ''))}</pre></body></html>`;
+      }
+
+      if (['js', 'mjs'].includes(ext)) {
+        return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{font-family:system-ui;padding:24px;background:#fff;color:#111}pre{white-space:pre-wrap;background:#f3f4f6;padding:16px;border-radius:12px;overflow:auto;border:1px solid #e5e7eb}</style></head><body><h3>JavaScript File</h3><pre>${escapeHtml(String(entry.content ?? ''))}</pre></body></html>`;
+      }
+
+      if (['css'].includes(ext)) {
+        return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>${String(entry.content ?? '')}</style></head><body style="font-family:system-ui;padding:24px;background:#fff;color:#111"><h3>CSS File</h3><p>Preview menampilkan stylesheet.</p></body></html>`;
+      }
+
+      if (['json', 'txt', 'yml', 'yaml', 'xml', 'toml'].includes(ext)) {
+        return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{font-family:var(--mono, monospace);padding:24px;background:#fff;color:#111;white-space:pre-wrap}</style></head><body>${escapeHtml(String(entry.content ?? ''))}</body></html>`;
+      }
+
+      return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{font-family:system-ui;padding:24px;background:#fff;color:#111}</style></head><body><h3>Unsupported preview type</h3><p>${escapeHtml(entry.name)}</p><pre style="white-space:pre-wrap;background:#f3f4f6;padding:16px;border-radius:12px;border:1px solid #e5e7eb">${escapeHtml(String(entry.content ?? ''))}</pre></body></html>`;
+    }
+
+    function inferEntryPoint(files) {
+      const rootNorm = normalizeRoot(STATE.root);
+      const scoped = filterFilesByRoot(files, rootNorm);
+
+      if (STATE.startFile) {
+        const startFile = String(STATE.startFile).replace(/^\/+/, '');
+        const exact = scoped.find((f) => f.path === startFile);
+        if (exact) return exact.path;
+      }
+
+      const preferred = [
+        `${rootNorm === '/' ? '' : rootNorm}/index.html`,
+        `${rootNorm === '/' ? '' : rootNorm}/main.html`,
+        `${rootNorm === '/' ? '' : rootNorm}/app.html`,
+      ].map((p) => p.replace(/^\//, ''));
+
+      for (const p of preferred) {
+        const hit = scoped.find((f) => f.path === p);
+        if (hit) return hit.path;
+      }
+
+      const html = scoped.find((f) => f.type === 'file' && ['html', 'htm'].includes(getExtension(f.name)));
+      if (html) return html.path;
+
+      return scoped.find((f) => f.type === 'file')?.path || null;
     }
 
     async function openFile(path) {
-      const file = state.files.find(f => f.path === path);
+      const file = STATE.files.find((f) => f.path === path);
       if (!file) return;
-      state.activePath = path;
-      els.activeTitle.textContent = file.name || getFileName(path);
-      els.activePath.textContent = path;
-      els.empty.classList.add('hidden');
+      STATE.activePath = path;
+      DOM.activeFileTitle.textContent = file.name || getFileName(path);
+      DOM.activeFilePath.textContent = path;
+      DOM.emptyState.classList.add('hidden');
       renderTreeNow();
       await reloadPreview();
     }
 
     async function openActiveSuggestion() {
-      if (state.activePath) return openFile(state.activePath);
-      const entry = inferEntryPoint(state.files);
+      if (STATE.activePath) return openFile(STATE.activePath);
+      const entry = inferEntryPoint(STATE.files);
       if (entry) return openFile(entry);
-      setStatus('no entry point', 'warn');
+      setStatus('No entry point', 'warn');
     }
 
     async function reloadPreview() {
-      if (!state.activePath) {
-        const entry = inferEntryPoint(state.files);
-        if (!entry) {
-          els.empty.classList.remove('hidden');
-          setStatus('idle', 'warn');
-          return;
+      if (STATE.isLoading) return;
+      STATE.isLoading = true;
+      setStatus('Loading preview...', 'warn');
+
+      try {
+        if (!STATE.activePath) {
+          const entry = inferEntryPoint(STATE.files);
+          if (!entry) {
+            DOM.emptyState.classList.remove('hidden');
+            setStatus('No entry point', 'warn');
+            return;
+          }
+          STATE.activePath = entry;
         }
-        state.activePath = entry;
+
+        const fileMap = collectAssetMap(STATE.files);
+        const doc = buildPreviewDoc(STATE.activePath, STATE.files, fileMap);
+
+        if (STATE.previewUrl) URL.revokeObjectURL(STATE.previewUrl);
+        const blob = new Blob([doc], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        STATE.previewUrl = url;
+        DOM.previewFrame.src = url;
+
+        setStatus('Preview ready', 'ok');
+      } catch (err) {
+        console.error('Failed to reload preview:', err);
+        setStatus('Preview error', 'error');
+      } finally {
+        STATE.isLoading = false;
       }
-
-      const fileMap = collectAssetMap(state.files);
-      const doc = buildPreviewDoc(state.activePath, state.files, fileMap);
-      state.previewSource = doc;
-      const blob = new Blob([doc], { type: 'text/html' });
-      const url = URL.createObjectURL(blob);
-      els.frame.src = url;
-      setTimeout(() => URL.revokeObjectURL(url), 5000);
-      setStatus('preview loaded', 'ok');
     }
 
-    function attachConsoleBridge() {
-      window.addEventListener('message', (ev) => {
-        const d = ev.data;
-        if (!d || !d.__forgePreview) return;
-        if (d.type === 'console') {
-          state.logs.push({ level: d.level || 'log', args: (d.args || []).map(x => String(x)), time: new Date() });
-          renderConsole();
-        }
-      });
-    }
-
-    
-
-    function toggleConsole() {
-      els.consolePanel.classList.toggle('hidden');
-    }
-
-    function openDevtoolsPanel() {
-      els.consolePanel.classList.remove('hidden');
-      if (!els.consoleBody.querySelector('.log-row')) {
-        logToConsole('info', ['DevTools panel siap.']);
-      }
+    function setViewport(mode) {
+      const valid = ['desktop', 'tablet', 'mobile'];
+      if (!valid.includes(mode)) mode = 'desktop';
+      DOM.previewContainer.classList.remove('view-desktop', 'view-tablet', 'view-mobile');
+      DOM.previewContainer.classList.add(`view-${mode}`);
+      [DOM.btnViewDesktop, DOM.btnViewTablet, DOM.btnViewMobile].forEach((btn) => btn.classList.remove('primary'));
+      if (mode === 'desktop') DOM.btnViewDesktop.classList.add('primary');
+      if (mode === 'tablet') DOM.btnViewTablet.classList.add('primary');
+      if (mode === 'mobile') DOM.btnViewMobile.classList.add('primary');
+      STATE.currentView = mode;
+      localStorage.setItem('forge-preview-view', mode);
     }
 
     function backToWorkspace() {
@@ -850,110 +1287,106 @@
       const url = new URL(location.href);
       url.searchParams.delete('view');
       url.searchParams.delete('root');
+      url.searchParams.delete('file');
       location.href = url.toString();
     }
 
-    async function loadWorkspace() {
-      setStatus('loading...', 'warn');
-      state.db = await openDB();
-      let files = await getAllFiles();
-      const root = normalizeRoot(state.root);
-      files = guessRootPaths(files, root);
-      state.files = files;
-      state.tree = buildTree(files);
-      renderWorkspaceInfo();
-      renderTreeNow();
-      attachConsoleBridge();
-      const entry = inferEntryPoint(files);
-      if (entry) {
-        await openFile(entry);
-      } else {
-        els.empty.classList.remove('hidden');
-        setStatus('no entry point', 'warn');
+    function setupEventListeners() {
+      DOM.btnReload.addEventListener('click', reloadPreview);
+      DOM.btnConsole.addEventListener('click', () => DOM.consolePanel.classList.toggle('hidden'));
+      DOM.btnDevtools.addEventListener('click', () => {
+        DOM.consolePanel.classList.remove('hidden');
+        if (!DOM.consoleBody.querySelector('.log-entry')) addLog('info', ['DevTools panel siap']);
+      });
+      DOM.btnBack.addEventListener('click', backToWorkspace);
+      DOM.btnOpenActive.addEventListener('click', openActiveSuggestion);
+      DOM.btnClearConsole.addEventListener('click', clearConsole);
+      DOM.searchInput.addEventListener('input', renderTreeNow);
+
+      DOM.btnViewDesktop.addEventListener('click', () => setViewport('desktop'));
+      DOM.btnViewTablet.addEventListener('click', () => setViewport('tablet'));
+      DOM.btnViewMobile.addEventListener('click', () => setViewport('mobile'));
+
+      DOM.previewFrame.addEventListener('load', () => setStatus('Preview ready', 'ok'));
+
+      document.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'r') {
+          e.preventDefault();
+          reloadPreview();
+        }
+        if ((e.ctrlKey || e.metaKey) && e.key === '`') {
+          e.preventDefault();
+          DOM.consolePanel.classList.toggle('hidden');
+        }
+        if (e.key === 'Escape' && !DOM.consolePanel.classList.contains('hidden')) {
+          DOM.consolePanel.classList.add('hidden');
+        }
+      });
+    }
+
+    function wrapConsole() {
+      ['log', 'info', 'warn', 'error', 'debug'].forEach((method) => {
+        const original = console[method].bind(console);
+        console[method] = function (...args) {
+          addLog(method, args);
+          try { return original(...args); } catch (_) {}
+        };
+      });
+    }
+
+    async function initializeWorkspace() {
+      try {
+        setStatus('Loading...', 'warn');
+        STATE.db = await openDB();
+
+        let files = await getAllFiles();
+        files = filterFilesByRoot(files, normalizeRoot(STATE.root));
+        STATE.files = files;
+        STATE.tree = buildFileTree(files);
+
+        renderWorkspaceInfo();
+        renderTreeNow();
+        attachConsoleBridge();
+        setupEventListeners();
+
+        const entry = inferEntryPoint(files);
+        if (entry) {
+          await openFile(entry);
+        } else {
+          DOM.emptyState.classList.remove('hidden');
+          setStatus('No entry point', 'warn');
+        }
+
+        setViewport(STATE.currentView);
+        setStatus('Ready', 'ok');
+      } catch (err) {
+        console.error('Initialization failed:', err);
+        DOM.workspaceSubtitle.textContent = 'Gagal membuka ForgeEditDB';
+        DOM.emptyState.classList.remove('hidden');
+        DOM.emptyState.innerHTML = `
+          <div class="empty-card">
+            <div class="empty-ico">⚠️</div>
+            <div class="empty-title">ForgeEditDB tidak bisa dibuka</div>
+            <div class="empty-desc">
+              Pastikan preview dibuka dari origin yang sama dengan ForgeEdit, dan database <code>ForgeEditDB</code> sudah berisi workspace.
+              <br><br>
+              <code style="display:inline-block;padding:6px 10px;border-radius:8px;background:rgba(255,255,255,0.06);color:#fff;max-width:100%;overflow:auto">${escapeHtml(err.message || String(err))}</code>
+            </div>
+          </div>
+        `;
+        setStatus('Error', 'error');
       }
     }
 
-    // iframe load/error handlers
-    els.frame.addEventListener('load', () => {
-      setStatus('preview ready', 'ok');
-      try {
-        const doc = els.frame.contentDocument;
-        if (doc) {
-          // helpful top banner for debugging without external devtools
-          const banner = doc.createElement('div');
-          banner.style.cssText = 'position:fixed;right:12px;bottom:12px;z-index:2147483647;padding:6px 10px;border-radius:999px;background:rgba(0,0,0,.65);color:#fff;font:12px system-ui;pointer-events:none';
-          banner.textContent = 'ForgeEdit Preview';
-          doc.documentElement.appendChild(banner);
-        }
-      } catch (_) {}
-    });
-
-    els.btnReload.addEventListener('click', reloadPreview);
-    els.btnConsole.addEventListener('click', toggleConsole);
-    els.btnDevtools.addEventListener('click', openDevtoolsPanel);
-    els.btnBack.addEventListener('click', backToWorkspace);
-    els.btnOpenActive.addEventListener('click', openActiveSuggestion);
-    els.btnClearConsole.addEventListener('click', clearConsole);
-    els.search.addEventListener('input', renderTreeNow);
-
-    document.addEventListener('keydown', (e) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'r') {
-        e.preventDefault();
-        reloadPreview();
-      }
-      if (e.key === 'Escape') {
-        if (!els.consolePanel.classList.contains('hidden')) {
-          els.consolePanel.classList.add('hidden');
-        }
-      }
-    });
-
-    // Simple console capture for this page too
-    console.log = ((orig) => function(...args) { logToConsole('log', args); return orig.apply(console, args); })(console.log.bind(console));
-    console.info = ((orig) => function(...args) { logToConsole('info', args); return orig.apply(console, args); })(console.info.bind(console));
-    console.warn = ((orig) => function(...args) { logToConsole('warn', args); return orig.apply(console, args); })(console.warn.bind(console));
-    console.error = ((orig) => function(...args) { logToConsole('error', args); return orig.apply(console, args); })(console.error.bind(console));
-
-    (async function init() {
-      try {
-        await loadWorkspace();
-        setStatus('ready', 'ok');
-      } catch (err) {
-        console.error(err);
-        els.subtitle.textContent = 'Failed to open ForgeEditDB';
-        els.empty.classList.remove('hidden');
-        els.empty.innerHTML = '<div><div style="font-size:18px;font-weight:700;margin-bottom:6px;color:var(--danger)">ForgeEditDB tidak bisa dibuka</div><div style="max-width:560px;line-height:1.6">Pastikan preview.html dibuka dari origin yang sama dengan ForgeEdit, dan IndexedDB <b>ForgeEditDB</b> memang sudah terisi.</div></div>';
-        setStatus('error', 'warn');
-      }
-    })();
-  </script>
-
-  <!-- New script for viewport toggle (no existing functions modified) -->
-  <script>
-    (function() {
-      const wrap = document.getElementById('previewFrameWrap');
-      const btnDesktop = document.getElementById('btnViewDesktop');
-      const btnTablet = document.getElementById('btnViewTablet');
-      const btnMobile = document.getElementById('btnViewMobile');
-      const buttons = [btnDesktop, btnTablet, btnMobile];
-
-      function setView(mode) {
-        wrap.classList.remove('view-desktop', 'view-tablet', 'view-mobile');
-        wrap.classList.add('view-' + mode);
-        buttons.forEach(b => b.classList.remove('active'));
-        const activeBtn = document.getElementById('btnView' + mode.charAt(0).toUpperCase() + mode.slice(1));
-        if (activeBtn) activeBtn.classList.add('active');
-        localStorage.setItem('forge-preview-view', mode);
-      }
-
-      btnDesktop.addEventListener('click', () => setView('desktop'));
-      btnTablet.addEventListener('click', () => setView('tablet'));
-      btnMobile.addEventListener('click', () => setView('mobile'));
-
-      // Default to desktop (or stored preference)
-      const stored = localStorage.getItem('forge-preview-view') || 'desktop';
-      setView(stored);
-    })();
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => {
+        wrapConsole();
+        initializeWorkspace();
+      });
+    } else {
+      wrapConsole();
+      initializeWorkspace();
+    }
   </script>
 </body>
 </html>
