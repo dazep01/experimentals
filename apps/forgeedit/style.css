@@ -142,8 +142,8 @@
         .editor-container.zen-mode .title-bar,.editor-container.zen-mode .toolbar,.editor-container.zen-mode .sidebar,.editor-container.zen-mode .status-bar,.editor-container.zen-mode .breadcrumb{display:none!important}
         .editor-container.zen-mode{position:fixed;inset:0;z-index:9999}
         .editor-container.zen-mode .code-editor-wrapper,.editor-container.zen-mode .markdown-wrapper{height:100dvh!important}
-        .code-editor-wrapper{flex:1;display:flex;flex-direction:column;overflow-y:auto;position:relative}
-        .CodeMirror{height:100%!important;min-height:100vh;font-family:var(--font-mono);overflow-y:auto !important;font-size:14px;line-height:1.6;background:var(--bg-primary)!important;color:var(--text-primary)!important}
+        .code-editor-wrapper{flex:1;display:flex;flex-direction:column;overflow:hidden;position:relative}
+        .CodeMirror{height:100%!important;font-family:var(--font-mono);overflow-y:auto !important;font-size:14px;line-height:1.6;background:var(--bg-primary)!important;color:var(--text-primary)!important}
         .CodeMirror-gutters{background:var(--bg-secondary)!important;border-right:1px solid var(--border-color)!important}
         .CodeMirror-linenumber{color:var(--text-faint)!important;font-size:0.85em;padding:0 12px 0 8px}
         .CodeMirror-cursor{border-left:2px solid var(--accent-primary)!important}
@@ -170,8 +170,8 @@
         .CodeMirror-hints{background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:var(--radius-md);box-shadow:var(--shadow-lg);font-family:var(--font-mono);font-size:0.85rem}
         .CodeMirror-hint{color:var(--text-primary);padding:6px 10px;border-radius:var(--radius-sm)}
         .CodeMirror-hint-active{background:var(--accent-primary);color:white}
-        .CodeMirror-vscrollbar,.CodeMirror-hscrollbar{display:none!important}
-        .CodeMirror-simplescroll-horizontal,.CodeMirror-simplescroll-vertical{display:block!important}
+        .CodeMirror-vscrollbar,.CodeMirror-hscrollbar{display:block!important}
+/*        .CodeMirror-simplescroll-horizontal,.CodeMirror-simplescroll-vertical{display:block!important} */
         .markdown-wrapper{flex:1;display:flex;overflow:hidden;position:relative}
         .markdown-editor-pane{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
         .markdown-preview-pane{flex:1;overflow:hidden;display:flex;flex-direction:column;min-width:0;background:var(--bg-primary)}
