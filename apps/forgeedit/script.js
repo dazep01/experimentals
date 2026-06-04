@@ -2678,7 +2678,78 @@ function registerSW() {
     console.warn('[ForgeEdit PWA] Service Worker not supported in this browser');
   }
 }
+   
+/* ───────────── PWA Install Prompt (manifest inline) ───────────── */
+let deferredPrompt = null;
 
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    
+    const installBanner = document.getElementById('install-banner');
+    const installBtn = document.getElementById('install-btn');
+    
+    if (installBanner) installBanner.classList.remove('hidden');
+    if (installBtn) installBtn.classList.remove('hidden');
+    
+    console.log('📲 PWA install prompt siap ditampilkan');
+});
+
+async function installApp() {
+    if (!deferredPrompt) {
+        showToast('Aplikasi sudah terinstal atau browser tidak mendukung', 'info');
+        return;
+    }
+    
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    console.log(`User response to install prompt: ${outcome}`);
+    
+    if (outcome === 'accepted') {
+        showToast('🎉 Aplikasi berhasil diinstal!', 'success');
+    } else {
+        showToast('Instalasi dibatalkan', 'info');
+    }
+    
+    deferredPrompt = null;
+    
+    const installBanner = document.getElementById('install-banner');
+    const installBtn = document.getElementById('install-btn');
+    if (installBanner) installBanner.classList.add('hidden');
+    if (installBtn) installBtn.classList.add('hidden');
+}
+
+function closeInstallBanner() {
+    const installBanner = document.getElementById('install-banner');
+    if (installBanner) installBanner.classList.add('hidden');
+}
+
+// Deteksi ketika sudah terinstal
+window.addEventListener('appinstalled', () => {
+    console.log('✅ PWA berhasil diinstal');
+    deferredPrompt = null;
+    
+    const installBanner = document.getElementById('install-banner');
+    const installBtn = document.getElementById('install-btn');
+    if (installBanner) installBanner.classList.add('hidden');
+    if (installBtn) installBtn.classList.add('hidden');
+    
+    showToast('Aplikasi sudah terinstal di perangkat Anda', 'success');
+});
+
+// Event listener untuk tombol install
+function bindInstallEvents() {
+    const installBtn = document.getElementById('install-btn');
+    const installBannerClose = document.getElementById('install-banner-close');
+    
+    if (installBtn) {
+        installBtn.addEventListener('click', installApp);
+    }
+    if (installBannerClose) {
+        installBannerClose.addEventListener('click', closeInstallBanner);
+    }
+}
+   
   /* ───────────── Initialize ───────────── */
   async function init() {
     cacheDom();
@@ -2708,7 +2779,7 @@ function registerSW() {
     });
 
     initGitMoireBridge();
-     
+    bindInstallEvents();
     console.log('[ForgeEdit Pro] Initialized');
   }
 
