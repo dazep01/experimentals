@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ForgeEdit Preview</title>
+  <style>
+    :root {
+      --bg: #0f1115;
+      --panel: #151922;
+      --panel-2: #1a2030;
+      --text: #e8ecf3;
+      --muted: #8f99ab;
+      --border: #2a3140;
+      --accent: #6ea8fe;
+      --danger: #ff6b6b;
+      --ok: #60d394;
+      --warn: #f7b267;
+      --shadow: 0 18px 60px rgba(0,0,0,.35);
+      --radius: 14px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      --sans: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    }
+    html, body { height: 100%; margin: 0; background: var(--bg); color: var(--text); font-family: var(--sans); }
+    * { box-sizing: border-box; }
+    button, input { font: inherit; }
+
+    .app {
+      height: 100%;
+      display: grid;
+      grid-template-rows: 56px 1fr 220px;
+      gap: 0;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 0 14px;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(180deg, rgba(255,255,255,.02), transparent);
+    }
+
+    .brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+    .logo {
+      width: 32px; height: 32px; border-radius: 10px;
+      display: grid; place-items: center;
+      background: rgba(110,168,254,.12);
+      color: var(--accent); border: 1px solid rgba(110,168,254,.22);
+      font-weight: 700;
+    }
+    .titlewrap { min-width: 0; }
+    .title { font-size: 14px; font-weight: 700; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .subtitle { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    .toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+    .btn {
+      border: 1px solid var(--border);
+      background: var(--panel);
+      color: var(--text);
+      padding: 8px 12px;
+      border-radius: 10px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn:hover { border-color: rgba(110,168,254,.35); }
+    .btn.primary { background: rgba(110,168,254,.14); border-color: rgba(110,168,254,.25); }
+    .btn.danger { background: rgba(255,107,107,.12); border-color: rgba(255,107,107,.25); }
+    .btn.small { padding: 6px 10px; font-size: 13px; }
+    .btn.active {
+      background: rgba(110,168,254,.2);
+      border-color: var(--accent);
+    }
+
+    .main {
+      display: grid;
+      grid-template-columns: 300px 1fr;
+      min-height: 0;
+    }
+
+    .sidebar {
+      border-right: 1px solid var(--border);
+      background: var(--panel);
+      min-height: 0;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+    }
+
+    .sidebar-head, .sidebar-foot, .preview-head, .console-head {
+      padding: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .sidebar-foot { border-top: 1px solid var(--border); border-bottom: 0; }
+
+    .search {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--panel-2);
+      color: var(--text);
+      outline: none;
+    }
+    .search:focus { border-color: rgba(110,168,254,.4); }
+
+    .tree {
+      overflow: auto;
+      padding: 8px 0 12px;
+    }
+
+    .tree ul { list-style: none; margin: 0; padding: 0; }
+    .tree-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 12px;
+      cursor: pointer;
+      user-select: none;
+      font-size: 13px;
+    }
+    .tree-item:hover { background: rgba(255,255,255,.03); }
+    .tree-item.active { background: rgba(110,168,254,.12); }
+    .tree-item.folder { color: #d8e3ff; }
+    .tree-item.file { color: var(--text); }
+    .tree-indent { width: 16px; flex: 0 0 16px; }
+    .tree-caret { width: 14px; text-align: center; color: var(--muted); font-size: 11px; }
+    .tree-icon { width: 18px; text-align: center; }
+    .tree-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .tree-meta { margin-left: auto; color: var(--muted); font-size: 11px; font-family: var(--mono); }
+
+    .preview-shell {
+      min-width: 0;
+      display: grid;
+      grid-template-rows: auto 1fr;
+      min-height: 0;
+    }
+    .preview-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      background: rgba(255,255,255,.01);
+    }
+    .status {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .status strong { font-size: 13px; }
+    .status span { font-size: 12px; color: var(--muted); }
+
+    .preview-frame-wrap {
+      position: relative;
+      min-height: 0;
+      background: #0b0d12;
+    }
+    /* Viewport mode styling */
+    .preview-frame-wrap.view-desktop { }
+    .preview-frame-wrap.view-tablet {
+      width: 768px;
+      max-width: 100%;
+      margin: 0 auto;
+      border-left: 1px solid var(--border);
+      border-right: 1px solid var(--border);
+    }
+    .preview-frame-wrap.view-mobile {
+      width: 375px;
+      max-width: 100%;
+      margin: 0 auto;
+      border-left: 1px solid var(--border);
+      border-right: 1px solid var(--border);
+    }
+    iframe#previewFrame {
+      width: 100%;
+      height: 100%;
+      border: 0;
+      background: #fff;
+      display: block;
+    }
+    .empty {
+      position: absolute; inset: 0;
+      display: grid; place-items: center;
+      color: var(--muted);
+      text-align: center;
+      padding: 24px;
+      pointer-events: none;
+    }
+
+    .console {
+      border-top: 1px solid var(--border);
+      background: var(--panel);
+      min-height: 0;
+      display: grid;
+      grid-template-rows: auto 1fr;
+    }
+    .console-head {
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    }
+    .console-title { font-weight: 700; font-size: 13px; }
+    .console-body {
+      overflow: auto;
+      font-family: var(--mono);
+      font-size: 12px;
+      padding: 10px 12px 16px;
+    }
+    .log-row {
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.02);
+      border-radius: 10px;
+      margin-bottom: 8px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .log-row.log { border-color: rgba(110,168,254,.2); }
+    .log-row.info { border-color: rgba(110,168,254,.2); }
+    .log-row.warn { border-color: rgba(247,178,103,.25); }
+    .log-row.error { border-color: rgba(255,107,107,.25); }
+    .log-meta { color: var(--muted); margin-bottom: 4px; }
+
+    .badge { padding: 3px 8px; border-radius: 999px; font-size: 11px; background: rgba(255,255,255,.05); color: var(--muted); border: 1px solid var(--border); }
+    .badge.ok { color: var(--ok); border-color: rgba(96,211,148,.2); background: rgba(96,211,148,.08); }
+    .badge.warn { color: var(--warn); border-color: rgba(247,178,103,.2); background: rgba(247,178,103,.08); }
+
+    .hidden { display: none !important; }
+
+    @media (max-width: 960px) {
+      .main { grid-template-columns: 1fr; }
+      .sidebar { display: none; }
+      .app { grid-template-rows: 56px 1fr 180px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="logo">F</div>
+        <div class="titlewrap">
+          <div class="title" id="workspaceTitle">ForgeEdit Preview</div>
+          <div class="subtitle" id="workspaceSubtitle">Loading workspace...</div>
+        </div>
+</div><div class="toolbar" style="display: flex; flex-direction: column; gap: 0;">
+  <div style="display: flex; gap: 8px; margin: 0; padding: 0; flex-wrap: wrap;">
+    <button class="btn small" id="btnBack" title="Back to workspace">← Workspace</button>
+    <button class="btn small" id="btnReload" title="Reload preview">Reload</button>
+    <button class="btn small" id="btnConsole" title="Toggle console">Console</button>
+    <button class="btn small primary" id="btnOpenDevtools" title="Open preview devtools panel">DevTools</button>
+  </div>
+  <div style="display: flex; gap: 8px; margin: 0; padding: 0; flex-wrap: wrap;">
+    <button class="btn small" id="btnViewDesktop" title="Desktop view (default)">Desktop</button>
+    <button class="btn small" id="btnViewTablet" title="Tablet view (768px)">Tablet</button>
+    <button class="btn small" id="btnViewMobile" title="Mobile view (375px)">Mobile</button>
+  </div>
+</div>
+
+    </header>
+
+    <section class="main">
+      <aside class="sidebar">
+        <div class="sidebar-head">
+          <input id="searchInput" class="search" placeholder="Search path / file name" />
+        </div>
+        <div class="tree" id="fileTree"></div>
+        <div class="sidebar-foot">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px;">
+            <span class="badge" id="fileCountBadge">0 files</span>
+            <span class="badge" id="folderCountBadge">0 folders</span>
+          </div>
+          <button class="btn small primary" id="btnOpenActive">Open Active File</button>
+        </div>
+      </aside>
+
+      <section class="preview-shell">
+        <div class="preview-head">
+          <div class="status">
+            <strong id="activeFileTitle">No file selected</strong>
+            <span id="activeFilePath">Select an index.html or any file from the tree</span>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;align-items:center;">
+            <span class="badge" id="runtimeBadge">idle</span>
+            <span class="badge" id="rootBadge">root: /</span>
+          </div>
+        </div>
+        <div class="preview-frame-wrap view-desktop" id="previewFrameWrap">
+          <iframe id="previewFrame" sandbox="allow-scripts allow-forms allow-modals allow-pointer-lock allow-popups"></iframe>
+          <div class="empty" id="emptyState">
+            <div>
+              <div style="font-size:18px;font-weight:700;margin-bottom:6px;">Preview belum jalan</div>
+              <div style="max-width:560px;line-height:1.6;">
+                ForgeEditDB terbaca, tapi belum ada file aktif. Klik file di sidebar, atau biarkan preview mencari <code>index.html</code> di root workspace.
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <section class="console hidden" id="consolePanel">
+      <div class="console-head">
+        <div class="console-title">Preview Console</div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <span class="badge" id="consoleCountBadge">0 logs</span>
+          <button class="btn small" id="btnClearConsole">Clear</button>
+        </div>
+      </div>
+      <div class="console-body" id="consoleBody"></div>
+    </section>
+  </div>
+
+  <script>
+    const DB_NAME = 'ForgeEditDB';
+    const DB_VER = 1;
+    const STORE = 'files';
+
+    const els = {
+      tree: document.getElementById('fileTree'),
+      search: document.getElementById('searchInput'),
+      frame: document.getElementById('previewFrame'),
+      empty: document.getElementById('emptyState'),
+      title: document.getElementById('workspaceTitle'),
+      subtitle: document.getElementById('workspaceSubtitle'),
+      activeTitle: document.getElementById('activeFileTitle'),
+      activePath: document.getElementById('activeFilePath'),
+      runtime: document.getElementById('runtimeBadge'),
+      rootBadge: document.getElementById('rootBadge'),
+      fileCount: document.getElementById('fileCountBadge'),
+      folderCount: document.getElementById('folderCountBadge'),
+      consolePanel: document.getElementById('consolePanel'),
+      consoleBody: document.getElementById('consoleBody'),
+      consoleCount: document.getElementById('consoleCountBadge'),
+      btnBack: document.getElementById('btnBack'),
+      btnReload: document.getElementById('btnReload'),
+      btnConsole: document.getElementById('btnConsole'),
+      btnDevtools: document.getElementById('btnOpenDevtools'),
+      btnOpenActive: document.getElementById('btnOpenActive'),
+      btnClearConsole: document.getElementById('btnClearConsole'),
+    };
+
+    const state = {
+      db: null,
+      files: [],
+      tree: null,
+      activePath: null,
+      root: getQueryParam('root') || '/',
+      startFile: getQueryParam('file') || null,
+      logs: [],
+      channel: null,
+      previewSource: null,
+    };
+
+    function getQueryParam(name) {
+      const u = new URL(location.href);
+      return u.searchParams.get(name);
+    }
+
+    function setStatus(text, kind = 'idle') {
+      els.runtime.textContent = text;
+      els.runtime.className = 'badge ' + (kind === 'ok' ? 'ok' : kind === 'warn' ? 'warn' : '');
+    }
+
+    function fmtBytes(bytes) {
+      if (!Number.isFinite(bytes)) return '';
+      const u = ['B', 'KB', 'MB', 'GB'];
+      let i = 0, v = bytes;
+      while (v >= 1024 && i < u.length - 1) { v /= 1024; i++; }
+      return `${v.toFixed(i === 0 ? 0 : 1)} ${u[i]}`;
+    }
+
+    function escapeHtml(str) {
+      return String(str ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function getFileName(path) {
+      const p = String(path || '');
+      const i = p.lastIndexOf('/');
+      return i >= 0 ? p.slice(i + 1) : p;
+    }
+
+    function getParentPath(path) {
+      const p = String(path || '');
+      const i = p.lastIndexOf('/');
+      return i > 0 ? p.slice(0, i) : '/';
+    }
+
+    function getExt(name) {
+      const n = String(name || '');
+      const i = n.lastIndexOf('.');
+      return i > 0 ? n.slice(i + 1).toLowerCase() : '';
+    }
+
+    function isImageFile(name) {
+      return ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'ico', 'bmp'].includes(getExt(name));
+    }
+
+    function isTextFile(name) {
+      const ext = getExt(name);
+      return ['html', 'htm', 'css', 'js', 'mjs', 'json', 'txt', 'md', 'markdown', 'xml', 'yaml', 'yml', 'toml', 'svg', 'ts', 'tsx', 'jsx', 'py', 'java', 'c', 'cpp', 'h', 'sh', 'bash', 'env', 'ini', 'conf'].includes(ext);
+    }
+
+    function openDB() {
+      return new Promise((resolve, reject) => {
+        const req = indexedDB.open(DB_NAME, DB_VER);
+        req.onupgradeneeded = (e) => {
+          const db = e.target.result;
+          if (!db.objectStoreNames.contains('files')) {
+            const s = db.createObjectStore('files', { keyPath: 'path' });
+            s.createIndex('parent', 'parent', { unique: false });
+            s.createIndex('type', 'type', { unique: false });
+            s.createIndex('modified', 'modified', { unique: false });
+          }
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+    }
+
+    function tx(store, mode = 'readonly') {
+      return state.db.transaction(store, mode).objectStore(store);
+    }
+
+    function getAllFiles() {
+      return new Promise((resolve, reject) => {
+        const req = tx(STORE).getAll();
+        req.onsuccess = () => resolve(req.result || []);
+        req.onerror = () => reject(req.error);
+      });
+    }
+
+    function getFile(path) {
+      return new Promise((resolve, reject) => {
+        const req = tx(STORE).get(path);
+        req.onsuccess = () => resolve(req.result || null);
+        req.onerror = () => reject(req.error);
+      });
+    }
+
+    function getByIndex(idx, val) {
+      return new Promise((resolve, reject) => {
+        const req = tx(STORE).index(idx).getAll(val);
+        req.onsuccess = () => resolve(req.result || []);
+        req.onerror = () => reject(req.error);
+      });
+    }
+
+    function guessRootPaths(files, root) {
+      const rootClean = normalizeRoot(root);
+      return files.filter(f => {
+        const p = String(f.path || '');
+        if (rootClean === '/') return true;
+        return p === rootClean || p.startsWith(rootClean + '/');
+      });
+    }
+
+    function normalizeRoot(root) {
+      const r = String(root || '/').trim();
+      if (!r || r === '/' || r === '.') return '/';
+      return r.replace(/^\/+/, '').replace(/\/+$/, '');
+    }
+
+    function buildTree(files) {
+      const root = { name: '/', path: '/', type: 'folder', open: true, children: new Map(), data: null };
+      const sorted = [...files].sort((a, b) => {
+        if (a.type !== b.type) return a.type === 'folder' ? -1 : 1;
+        return String(a.path).localeCompare(String(b.path));
+      });
+
+      for (const f of sorted) {
+        const parts = String(f.path || '').split('/').filter(Boolean);
+        let node = root;
+        for (let i = 0; i < parts.length; i++) {
+          const part = parts[i];
+          const isLast = i === parts.length - 1;
+          if (!node.children.has(part)) {
+            node.children.set(part, {
+              name: part,
+              path: parts.slice(0, i + 1).join('/'),
+              type: isLast ? f.type : 'folder',
+              open: Boolean(isLast ? f.open : true),
+              children: new Map(),
+              data: isLast ? f : null,
+            });
+          }
+          const next = node.children.get(part);
+          if (isLast) {
+            next.type = f.type;
+            next.data = f;
+            if (f.type === 'folder') next.open = Boolean(f.open);
+          }
+          node = next;
+        }
+      }
+      return root;
+    }
+
+    function renderTree(node, depth = 0, filter = '') {
+      const entries = [...node.children.values()].sort((a, b) => {
+        if (a.type !== b.type) return a.type === 'folder' ? -1 : 1;
+        return a.name.localeCompare(b.name);
+      });
+      const q = filter.trim().toLowerCase();
+      const html = [];
+
+      for (const entry of entries) {
+        const isFolder = entry.type === 'folder';
+        const hasChildren = entry.children.size > 0;
+        const visible = !q || entry.path.toLowerCase().includes(q) || entry.name.toLowerCase().includes(q);
+        if (!visible && isFolder) {
+          const childMatch = subtreeHasMatch(entry, q);
+          if (!childMatch) continue;
+        } else if (!visible) {
+          continue;
+        }
+
+        const isActive = state.activePath === entry.path;
+        const caret = isFolder ? (entry.open ? '▾' : '▸') : '•';
+        const icon = isFolder ? (entry.open ? '📂' : '📁') : iconFor(entry.name);
+        html.push(`
+          <div class="tree-item ${isFolder ? 'folder' : 'file'} ${isActive ? 'active' : ''}" data-path="${escapeHtml(entry.path)}" data-type="${entry.type}" style="padding-left:${12 + depth * 16}px">
+            <div class="tree-caret">${caret}</div>
+            <div class="tree-icon">${icon}</div>
+            <div class="tree-name">${escapeHtml(entry.name)}</div>
+            <div class="tree-meta">${isFolder ? entry.children.size : (entry.data && typeof entry.data.size === 'number' ? fmtBytes(entry.data.size) : '')}</div>
+          </div>
+        `);
+
+        if (isFolder && entry.open && hasChildren) {
+          html.push(renderTree(entry, depth + 1, filter));
+        }
+      }
+      return html.join('');
+    }
+
+    function subtreeHasMatch(node, q) {
+      if (!q) return true;
+      for (const child of node.children.values()) {
+        if (child.path.toLowerCase().includes(q) || child.name.toLowerCase().includes(q)) return true;
+        if (child.type === 'folder' && subtreeHasMatch(child, q)) return true;
+      }
+      return false;
+    }
+
+    function iconFor(name) {
+      const ext = getExt(name);
+      const map = {
+        html: '🌐', htm: '🌐', css: '🎨', js: '🔥', mjs: '🔥', ts: '🟦', tsx: '🟦', jsx: '🧩',
+        json: '🧾', md: '📝', txt: '📄', xml: '📄', yml: '📄', yaml: '📄', toml: '📄',
+        py: '🐍', java: '☕', c: '🧷', cpp: '🧷', h: '🧷', sh: '🐚', svg: '🖼️', png: '🖼️', jpg: '🖼️', jpeg: '🖼️', gif: '🖼️', webp: '🖼️'
+      };
+      return map[ext] || '📄';
+    }
+
+    function logToConsole(level, args) {
+      const row = { level, args: args.map(x => serializeArg(x)), time: new Date() };
+      state.logs.push(row);
+      renderConsole();
+    }
+
+    function serializeArg(v) {
+      if (typeof v === 'string') return v;
+      if (typeof v === 'number' || typeof v === 'boolean') return String(v);
+      if (v instanceof Error) return v.stack || v.message;
+      try { return JSON.stringify(v, null, 2); } catch { return String(v); }
+    }
+
+    function renderConsole() {
+      els.consoleCount.textContent = `${state.logs.length} logs`;
+      els.consoleBody.innerHTML = state.logs.map((l, idx) => `
+        <div class="log-row ${escapeHtml(l.level)}">
+          <div class="log-meta">${idx + 1}. ${escapeHtml(l.level.toUpperCase())} · ${escapeHtml(l.time.toLocaleTimeString())}</div>
+          <div>${escapeHtml(l.args.join(' '))}</div>
+        </div>
+      `).join('');
+      els.consoleBody.scrollTop = els.consoleBody.scrollHeight;
+    }
+
+    function clearConsole() {
+      state.logs = [];
+      renderConsole();
+    }
+
+    function inferEntryPoint(files) {
+      const rootClean = normalizeRoot(state.root);
+      const scoped = guessRootPaths(files, rootClean);
+
+      if (state.startFile) {
+        const startFile = String(state.startFile).replace(/^\/+/, '');
+        const exact = scoped.find(f => f.path === startFile);
+        if (exact) return exact.path;
+      }
+
+      const candidates = [
+        `${rootClean === '/' ? '' : rootClean}/index.html`.replace(/^\//, ''),
+        `${rootClean === '/' ? '' : rootClean}/main.html`.replace(/^\//, ''),
+        `${rootClean === '/' ? '' : rootClean}/app.html`.replace(/^\//, ''),
+      ].filter(Boolean);
+      for (const c of candidates) {
+        const hit = scoped.find(f => f.path === c);
+        if (hit) return hit.path;
+      }
+      const html = scoped.find(f => f.type === 'file' && ['html', 'htm'].includes(getExt(f.name)));
+      if (html) return html.path;
+      return scoped.find(f => f.type === 'file')?.path || null;
+    }
+
+    function collectAssetMap(files) {
+      const map = new Map();
+      for (const f of files) {
+        if (f.type !== 'file') continue;
+        map.set(f.path, f);
+      }
+      return map;
+    }
+
+    function pathResolve(fromPath, relativePath) {
+      if (!relativePath || /^(https?:|data:|blob:|about:|javascript:)/i.test(relativePath)) return relativePath;
+      if (relativePath.startsWith('/')) return relativePath.replace(/^\/+/, '');
+      const fromDir = getParentPath(fromPath).split('/').filter(Boolean);
+      const rel = relativePath.split('/');
+      const out = [...fromDir];
+      for (const seg of rel) {
+        if (!seg || seg === '.') continue;
+        if (seg === '..') out.pop();
+        else out.push(seg);
+      }
+      return out.join('/');
+    }
+
+    function getBlobUrl(file) {
+      const content = String(file.content ?? '');
+      const ext = getExt(file.name);
+      const typeMap = {
+        html: 'text/html', htm: 'text/html', css: 'text/css', js: 'application/javascript', mjs: 'application/javascript', json: 'application/json',
+        svg: 'image/svg+xml', md: 'text/markdown', txt: 'text/plain', xml: 'application/xml', yml: 'text/yaml', yaml: 'text/yaml',
+        png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif', webp: 'image/webp', ico: 'image/x-icon',
+        woff: 'font/woff', woff2: 'font/woff2', ttf: 'font/ttf', otf: 'font/otf'
+      };
+      return URL.createObjectURL(new Blob([content], { type: typeMap[ext] || 'text/plain' }));
+    }
+
+    function rewriteHtml(html, entryPath, fileMap, rootFiles) {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, 'text/html');
+
+      const nodes = [
+        ...doc.querySelectorAll('img[src], script[src], link[href], source[src], video[src], audio[src], iframe[src]')
+      ];
+
+      for (const el of nodes) {
+        const attr = el.hasAttribute('src') ? 'src' : 'href';
+        const raw = el.getAttribute(attr);
+        if (!raw || /^(https?:|data:|blob:|javascript:|about:)/i.test(raw)) continue;
+        const resolved = pathResolve(entryPath, raw);
+        const file = fileMap.get(resolved);
+        if (!file) continue;
+        if (isImageFile(file.name) || ['svg', 'css', 'js', 'mjs', 'html', 'htm', 'json', 'txt'].includes(getExt(file.name))) {
+          const blobUrl = getBlobUrl(file);
+          el.setAttribute(attr, blobUrl);
+        }
+      }
+
+      const styles = [...doc.querySelectorAll('style')];
+      for (const st of styles) {
+        // leave inline style intact
+        void st;
+      }
+
+      const bootstrap = `
+        <script>
+          (function(){
+            const send = (type, level, args) => parent.postMessage({ __forgePreview: true, type, level, args: args.map(a => {
+              try { return typeof a === 'string' ? a : JSON.stringify(a); } catch(e) { return String(a); }
+            }) }, '*');
+            ['log','info','warn','error','debug'].forEach(fn => {
+              const orig = console[fn];
+              console[fn] = function(...args){ send('console', fn, args); try { return orig.apply(console, args); } catch(e){} };
+            });
+            window.addEventListener('error', (e) => send('console', 'error', [e.message, e.filename + ':' + e.lineno + ':' + e.colno]));
+            window.addEventListener('unhandledrejection', (e) => send('console', 'error', ['Unhandled rejection', e.reason]));
+          })();
+        <\/script>`;
+
+      const body = doc.body || doc.documentElement;
+      if (body) body.insertAdjacentHTML('beforeend', bootstrap);
+
+      return '<!DOCTYPE html>\n' + doc.documentElement.outerHTML;
+    }
+
+    function buildPreviewDoc(entryPath, files, fileMap) {
+      const entry = fileMap.get(entryPath);
+      if (!entry) {
+        return `<!DOCTYPE html><html><body style="font-family:system-ui;padding:24px"><h2>File tidak ditemukan</h2><p>${escapeHtml(entryPath)}</p></body></html>`;
+      }
+
+      const ext = getExt(entry.name);
+      if (isImageFile(entry.name)) {
+        const url = getBlobUrl(entry);
+        return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>html,body{height:100%;margin:0;background:#111;display:grid;place-items:center}img{max-width:100%;max-height:100%;object-fit:contain}</style></head><body><img src="${url}" alt="${escapeHtml(entry.name)}"></body></html>`;
+      }
+
+      if (ext === 'svg') {
+        return String(entry.content ?? '');
+      }
+
+      if (['html', 'htm'].includes(ext)) {
+        return rewriteHtml(String(entry.content ?? ''), entryPath, fileMap, files);
+      }
+
+      if (ext === 'md' || ext === 'markdown') {
+        const safe = escapeHtml(String(entry.content ?? ''));
+        return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{font-family:system-ui;max-width:900px;margin:40px auto;padding:0 20px;line-height:1.7}pre{white-space:pre-wrap;background:#111;color:#eee;padding:16px;border-radius:12px;overflow:auto}</style></head><body><pre>${safe}</pre></body></html>`;
+      }
+
+      if (['js', 'mjs'].includes(ext)) {
+        const code = String(entry.content ?? '');
+        return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{font-family:system-ui;padding:24px}pre{white-space:pre-wrap;background:#111;color:#eee;padding:16px;border-radius:12px;overflow:auto}</style></head><body><h3>JavaScript file</h3><pre>${escapeHtml(code)}</pre></body></html>`;
+      }
+
+      if (['css'].includes(ext)) {
+        return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>${String(entry.content ?? '')}</style></head><body style="font-family:system-ui;padding:24px"><h3>CSS file</h3><p>Preview menampilkan isi stylesheet.</p></body></html>`;
+      }
+
+      if (['json', 'txt', 'yml', 'yaml', 'xml', 'toml'].includes(ext)) {
+        return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{font-family:ui-monospace,monospace;padding:24px;white-space:pre-wrap;background:#fff;color:#111}</style></head><body>${escapeHtml(String(entry.content ?? ''))}</body></html>`;
+      }
+
+      return `<!DOCTYPE html><html><body style="font-family:system-ui;padding:24px"><h3>Unsupported preview type</h3><p>${escapeHtml(entry.name)}</p><pre style="white-space:pre-wrap">${escapeHtml(String(entry.content ?? ''))}</pre></body></html>`;
+    }
+
+    function renderWorkspaceInfo() {
+      const root = normalizeRoot(state.root);
+      const rootLabel = root === '/' ? '/' : '/' + root;
+      els.rootBadge.textContent = `root: ${rootLabel}`;
+      const scope = guessRootPaths(state.files, root);
+      const files = scope.filter(f => f.type === 'file').length;
+      const folders = scope.filter(f => f.type === 'folder').length;
+      els.fileCount.textContent = `${files} files`;
+      els.folderCount.textContent = `${folders} folders`;
+      els.subtitle.textContent = `ForgeEditDB · files/${scope.length} nodes · ${location.pathname.split('/').pop() || 'preview.html'}`;
+    }
+
+    function renderTreeNow() {
+      const q = els.search.value || '';
+      els.tree.innerHTML = renderTree(state.tree, 0, q) || '<div style="padding:14px;color:var(--muted)">No files found.</div>';
+      els.tree.querySelectorAll('.tree-item').forEach(el => {
+        el.addEventListener('click', async () => {
+          const path = el.dataset.path;
+          const type = el.dataset.type;
+          if (type === 'folder') {
+            const folder = findNodeByPath(state.tree, path);
+            if (folder) {
+              folder.open = !folder.open;
+              renderTreeNow();
+            }
+            return;
+          }
+          await openFile(path);
+        });
+      });
+    }
+
+    function findNodeByPath(node, path) {
+      if (node.path === path) return node;
+      for (const child of node.children.values()) {
+        const hit = findNodeByPath(child, path);
+        if (hit) return hit;
+      }
+      return null;
+    }
+
+    async function openFile(path) {
+      const file = state.files.find(f => f.path === path);
+      if (!file) return;
+      state.activePath = path;
+      els.activeTitle.textContent = file.name || getFileName(path);
+      els.activePath.textContent = path;
+      els.empty.classList.add('hidden');
+      renderTreeNow();
+      await reloadPreview();
+    }
+
+    async function openActiveSuggestion() {
+      if (state.activePath) return openFile(state.activePath);
+      const entry = inferEntryPoint(state.files);
+      if (entry) return openFile(entry);
+      setStatus('no entry point', 'warn');
+    }
+
+    async function reloadPreview() {
+      if (!state.activePath) {
+        const entry = inferEntryPoint(state.files);
+        if (!entry) {
+          els.empty.classList.remove('hidden');
+          setStatus('idle', 'warn');
+          return;
+        }
+        state.activePath = entry;
+      }
+
+      const fileMap = collectAssetMap(state.files);
+      const doc = buildPreviewDoc(state.activePath, state.files, fileMap);
+      state.previewSource = doc;
+      const blob = new Blob([doc], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      els.frame.src = url;
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+      setStatus('preview loaded', 'ok');
+    }
+
+    function attachConsoleBridge() {
+      window.addEventListener('message', (ev) => {
+        const d = ev.data;
+        if (!d || !d.__forgePreview) return;
+        if (d.type === 'console') {
+          state.logs.push({ level: d.level || 'log', args: (d.args || []).map(x => String(x)), time: new Date() });
+          renderConsole();
+        }
+      });
+    }
+
+    
+
+    function toggleConsole() {
+      els.consolePanel.classList.toggle('hidden');
+    }
+
+    function openDevtoolsPanel() {
+      els.consolePanel.classList.remove('hidden');
+      if (!els.consoleBody.querySelector('.log-row')) {
+        logToConsole('info', ['DevTools panel siap.']);
+      }
+    }
+
+    function backToWorkspace() {
+      if (window.parent && window.parent !== window) {
+        try {
+          window.parent.postMessage({ __forgePreview: true, type: 'close-preview' }, '*');
+          return;
+        } catch (_) {}
+      }
+      const url = new URL(location.href);
+      url.searchParams.delete('view');
+      url.searchParams.delete('root');
+      location.href = url.toString();
+    }
+
+    async function loadWorkspace() {
+      setStatus('loading...', 'warn');
+      state.db = await openDB();
+      let files = await getAllFiles();
+      const root = normalizeRoot(state.root);
+      files = guessRootPaths(files, root);
+      state.files = files;
+      state.tree = buildTree(files);
+      renderWorkspaceInfo();
+      renderTreeNow();
+      attachConsoleBridge();
+      const entry = inferEntryPoint(files);
+      if (entry) {
+        await openFile(entry);
+      } else {
+        els.empty.classList.remove('hidden');
+        setStatus('no entry point', 'warn');
+      }
+    }
+
+    // iframe load/error handlers
+    els.frame.addEventListener('load', () => {
+      setStatus('preview ready', 'ok');
+      try {
+        const doc = els.frame.contentDocument;
+        if (doc) {
+          // helpful top banner for debugging without external devtools
+          const banner = doc.createElement('div');
+          banner.style.cssText = 'position:fixed;right:12px;bottom:12px;z-index:2147483647;padding:6px 10px;border-radius:999px;background:rgba(0,0,0,.65);color:#fff;font:12px system-ui;pointer-events:none';
+          banner.textContent = 'ForgeEdit Preview';
+          doc.documentElement.appendChild(banner);
+        }
+      } catch (_) {}
+    });
+
+    els.btnReload.addEventListener('click', reloadPreview);
+    els.btnConsole.addEventListener('click', toggleConsole);
+    els.btnDevtools.addEventListener('click', openDevtoolsPanel);
+    els.btnBack.addEventListener('click', backToWorkspace);
+    els.btnOpenActive.addEventListener('click', openActiveSuggestion);
+    els.btnClearConsole.addEventListener('click', clearConsole);
+    els.search.addEventListener('input', renderTreeNow);
+
+    document.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'r') {
+        e.preventDefault();
+        reloadPreview();
+      }
+      if (e.key === 'Escape') {
+        if (!els.consolePanel.classList.contains('hidden')) {
+          els.consolePanel.classList.add('hidden');
+        }
+      }
+    });
+
+    // Simple console capture for this page too
+    console.log = ((orig) => function(...args) { logToConsole('log', args); return orig.apply(console, args); })(console.log.bind(console));
+    console.info = ((orig) => function(...args) { logToConsole('info', args); return orig.apply(console, args); })(console.info.bind(console));
+    console.warn = ((orig) => function(...args) { logToConsole('warn', args); return orig.apply(console, args); })(console.warn.bind(console));
+    console.error = ((orig) => function(...args) { logToConsole('error', args); return orig.apply(console, args); })(console.error.bind(console));
+
+    (async function init() {
+      try {
+        await loadWorkspace();
+        setStatus('ready', 'ok');
+      } catch (err) {
+        console.error(err);
+        els.subtitle.textContent = 'Failed to open ForgeEditDB';
+        els.empty.classList.remove('hidden');
+        els.empty.innerHTML = '<div><div style="font-size:18px;font-weight:700;margin-bottom:6px;color:var(--danger)">ForgeEditDB tidak bisa dibuka</div><div style="max-width:560px;line-height:1.6">Pastikan preview.html dibuka dari origin yang sama dengan ForgeEdit, dan IndexedDB <b>ForgeEditDB</b> memang sudah terisi.</div></div>';
+        setStatus('error', 'warn');
+      }
+    })();
+  </script>
+
+  <!-- New script for viewport toggle (no existing functions modified) -->
+  <script>
+    (function() {
+      const wrap = document.getElementById('previewFrameWrap');
+      const btnDesktop = document.getElementById('btnViewDesktop');
+      const btnTablet = document.getElementById('btnViewTablet');
+      const btnMobile = document.getElementById('btnViewMobile');
+      const buttons = [btnDesktop, btnTablet, btnMobile];
+
+      function setView(mode) {
+        wrap.classList.remove('view-desktop', 'view-tablet', 'view-mobile');
+        wrap.classList.add('view-' + mode);
+        buttons.forEach(b => b.classList.remove('active'));
+        const activeBtn = document.getElementById('btnView' + mode.charAt(0).toUpperCase() + mode.slice(1));
+        if (activeBtn) activeBtn.classList.add('active');
+        localStorage.setItem('forge-preview-view', mode);
+      }
+
+      btnDesktop.addEventListener('click', () => setView('desktop'));
+      btnTablet.addEventListener('click', () => setView('tablet'));
+      btnMobile.addEventListener('click', () => setView('mobile'));
+
+      // Default to desktop (or stored preference)
+      const stored = localStorage.getItem('forge-preview-view') || 'desktop';
+      setView(stored);
+    })();
+  </script>
+</body>
+</html>
