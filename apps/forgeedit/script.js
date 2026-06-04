@@ -229,7 +229,7 @@
     const ids = [
       'sidebar', 'sidebarOverlay', 'fileTree', 'sidebarSearch',
       'toggleSidebar', 'toggleZen', 'openSettings', 'openCommandPalette',
-      'newFile', 'newFolder', 'collapseAll',
+      'newFile', 'newFolder', 'collapseAll', 'openPreview',
       'fileTabs', 'breadcrumb',
       'toolbar', 'formatToolbar', 'viewToolbar', 'codeToolbar',
       'editorContainer', 'welcomeScreen', 'codeEditorWrapper',
@@ -1604,7 +1604,7 @@ function openGitMoireInline() {
     { name: 'Format Code', icon: '&#128312;', shortcut: 'Alt+Shift+F', action: () => formatCode() },
     { name: 'Minify Code', icon: '&#128315;', action: () => minifyCode() },
     { name: 'Close Tab', icon: '&#10005;', shortcut: 'Ctrl+W', action: () => state.activeTab && closeTab(state.activeTab) },
-    { name: 'Toggle Preview', icon: '&#128065;', shortcut: 'Ctrl+P', action: () => togglePreview() },
+    { name: 'Toggle Preview', icon: '&#128065;', shortcut: 'Ctrl+Shift+P', action: () => openPreview() },
     { name: 'Split View', icon: '&#128473;', action: () => setMarkdownView('split') },
     { name: 'Go to Line', icon: '&#8595;', shortcut: 'Ctrl+G', action: () => { const ed = getActiveEditor(); if (ed) CodeMirror.commands.jumpToLine(ed); } },
   ];
@@ -2260,7 +2260,7 @@ function openGitMoireInline() {
     DOM.btnTable.addEventListener('click', () => insertMarkdown('table'));
 
     // View toolbar
-    DOM.btnPreview.addEventListener('click', togglePreview);
+    DOM.btnPreview.addEventListener('click', openPreview);
     DOM.btnSplit.addEventListener('click', () => setMarkdownView('split'));
 
     // Code toolbar
