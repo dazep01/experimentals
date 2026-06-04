@@ -15,7 +15,7 @@
     <meta name="msapplication-starturl" content="./">
     <title>ForgeEdit Pro — Editor Multifungsi</title>
     
-    <link rel="manifest" href="./manifest.json">
+    <link rel="manifest" href='data:application/manifest+json,{"name":"ForgeEdit Pro","short_name":"ForgeEdit","description":"Editor Multifungsi dengan IndexedDB dan Folder Tree","start_url":".","display":"standalone","orientation":"any","background_color":"#1e1e2e","theme_color":"#7c3aed","icons":[{"src":"./icons/icon-72x72.png","sizes":"72x72","type":"image/png"},{"src":"./icons/icon-96x96.png","sizes":"96x96","type":"image/png"},{"src":"./icons/icon-128x128.png","sizes":"128x128","type":"image/png"},{"src":"./icons/icon-144x144.png","sizes":"144x144","type":"image/png"},{"src":"./icons/icon-152x152.png","sizes":"152x152","type":"image/png"},{"src":"./icons/icon-192x192.png","sizes":"192x192","type":"image/png","purpose":"any"},{"src":"./icons/icon-384x384.png","sizes":"384x384","type":"image/png"},{"src":"./icons/icon-512x512.png","sizes":"512x512","type":"image/png","purpose":"any maskable"}],"shortcuts":[{"name":"New File","short_name":"New","url":"./index.html?action=newfile","icons":[{"src":"./icons/icon-96x96.png","sizes":"96x96","type":"image/png"}]},{"name":"Open File","short_name":"Open","url":"./index.html?action=openfile","icons":[{"src":"./icons/icon-96x96.png","sizes":"96x96","type":"image/png"}]},{"name":"Settings","short_name":"Settings","url":"./index.html?action=settings","icons":[{"src":"./icons/icon-96x96.png","sizes":"96x96","type":"image/png"}]}]}'>
     
     <link rel="icon" type="image/svg+xml" href="./icons/icon.svg">
     <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192x192.png">
@@ -422,7 +422,27 @@
 <input type="file" id="fileInput" style="display:none;" multiple accept=".txt,.html,.htm,.css,.js,.md,.json,.xml,.yaml,.yml,.py,.ts,.tsx,.jsx,.php,.sql,.sh,.sass,.scss,.less,.dockerfile,.go,.rs,.rb,.java,.c,.cpp,.h,.cs,.lua,.pl,.ps1,.vb,.vue,.coffee,.ls,.styl,.pug,.jade,.ini,.conf,.env,.toml,.diff,.patch">
 <input type="file" id="folderInput" style="display:none;" webkitdirectory directory multiple>
 <input type="file" id="importInput" style="display:none;" accept=".zip,.json">
-  
+
+<style>
+ .install-banner { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: var(--bg-secondary); border-top: 1px solid var(--border-color); position: fixed; bottom: 0; left: 0; right: 0; z-index: 999; box-shadow: 0 -2px 10px rgba(0,0,0,0.3); transition: transform 0.3s ease; flex-wrap: wrap }
+ .install-banner.hidden { display: none }
+ .install-banner-text { flex: 1; min-width: 0 }
+ .install-banner-title { font-weight: 600; font-size: 0.9rem }
+ .install-banner-sub { font-size: 0.75rem; color: var(--text-muted) }
+ .install-banner-btn { background: var(--accent-primary); color: white; border: none; padding: 8px 16px; border-radius: var(--radius-sm); cursor: pointer; font-weight: 600; margin-left: 12px; white-space: nowrap }
+ .install-banner-close { background: none; border: none; color: var(--text-muted); font-size: 1.2rem; cursor: pointer; margin-left: 8px; padding: 0 4px }
+</style>
+    
+<!-- Install Banner -->
+<div class="install-banner hidden" id="install-banner">
+    <div class="install-banner-text">
+        <div class="install-banner-title">Pasang ForgeEdit Pro</div>
+        <div class="install-banner-sub">Tambahkan ke layar utama untuk akses cepat dan offline</div>
+    </div>
+    <button class="install-banner-btn" id="install-btn">Install</button>
+    <button class="install-banner-close" id="install-banner-close">&times;</button>
+</div>
+    
 <script src="./script.js"></script>
 </body>
 </html>
