@@ -139,39 +139,40 @@
         .toolbar-btn.active:hover{background:var(--accent-secondary)}
         .toolbar-divider{width:1px;height:18px;background:var(--border-color);margin:0 4px;flex-shrink:0}
 .editor-container { flex: 1; display: flex; overflow: hidden; position: relative }
- .editor-container.zen-mode .title-bar, .editor-container.zen-mode .toolbar, .editor-container.zen-mode .sidebar, .editor-container.zen-mode .status-bar, .editor-container.zen-mode .breadcrumb { display: none !important }
- .editor-container.zen-mode { position: fixed; inset: 0; z-index: 9999 }
- .editor-container.zen-mode .code-editor-wrapper, .editor-container.zen-mode .markdown-wrapper { height: 100dvh !important }
- .code-editor-wrapper { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative }
- .CodeMirror { height: 100% !important; font-family: var(--font-mono); font-size: 14px; line-height: 1.6; background: var(--bg-primary) !important; color: var(--text-primary) !important }
- .CodeMirror-scroll { height: 100% !important; overflow-y: scroll !important; margin-right: -50px; padding-right: 50px }
- .CodeMirror-gutters { background: var(--bg-secondary) !important; border-right: 1px solid var(--border-color) !important }
- .CodeMirror-linenumber { color: var(--text-faint) !important; font-size: 0.85em; padding: 0 12px 0 8px }
- .CodeMirror-cursor { border-left: 2px solid var(--accent-primary) !important }
- .CodeMirror-selected { background: var(--accent-glow) !important }
- .CodeMirror-line::selection, .CodeMirror-line > span::selection, .CodeMirror-line > span > span::selection { background: var(--accent-glow) }
- .CodeMirror-activeline-background { background: var(--bg-tertiary) !important }
- .CodeMirror-foldmarker { color: var(--accent-primary); font-family: var(--font-sans); font-size: 0.8em; padding: 0 4px; background: var(--accent-glow); border-radius: 3px }
- .CodeMirror-foldgutter { width: 14px }
- .CodeMirror-foldgutter-open, .CodeMirror-foldgutter-folded { color: var(--text-muted); font-size: 0.8em }
- .CodeMirror-foldgutter-open::after { content: "▼" }
- .CodeMirror-foldgutter-folded::after { content: "▶" }
- .cm-trailingspace { background: var(--error-dim) }
- .cm-matchhighlight { background: var(--accent-glow) }
- .cm-searching { background: var(--warning-dim); border-radius: 2px }
- .CodeMirror-dialog { background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 8px 12px; box-shadow: var(--shadow-lg); color: var(--text-primary) }
- .CodeMirror-dialog input { background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: var(--radius-sm); color: var(--text-primary); padding: 6px 10px; font-family: var(--font-sans); outline: none }
- .CodeMirror-dialog input:focus { border-color: var(--accent-primary); box-shadow: 0 0 0 2px var(--accent-glow) }
- .CodeMirror-dialog button { background: var(--bg-hover); border: 1px solid var(--border-color); border-radius: var(--radius-sm); color: var(--text-primary); padding: 4px 10px; margin-left: 6px; cursor: pointer; font-family: var(--font-sans); font-size: 0.8rem }
- .CodeMirror-dialog button:hover { background: var(--bg-active) }
- .CodeMirror-scrollbar-filler, .CodeMirror-gutter-filler { background: transparent !important }
- .CodeMirror-simplescroll-horizontal, .CodeMirror-simplescroll-vertical { background: transparent }
- .CodeMirror-simplescroll-horizontal div, .CodeMirror-simplescroll-vertical div { background: var(--bg-hover); border-radius: 4px; border: none }
- .CodeMirror-simplescroll-horizontal div:hover, .CodeMirror-simplescroll-vertical div:hover { background: var(--bg-active) }
- .CodeMirror-vscrollbar, .CodeMirror-hscrollbar { display: block !important }
- .CodeMirror-hints { background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md); box-shadow: var(--shadow-lg); font-family: var(--font-mono); font-size: 0.85rem }
- .CodeMirror-hint { color: var(--text-primary); padding: 6px 10px; border-radius: var(--radius-sm) }
- .CodeMirror-hint-active { background: var(--accent-primary); color: white }
+.editor-container.zen-mode .title-bar, .editor-container.zen-mode .toolbar, .editor-container.zen-mode .sidebar, .editor-container.zen-mode .status-bar, .editor-container.zen-mode .breadcrumb { display: none !important }
+.editor-container.zen-mode { position: fixed; inset: 0; z-index: 9999 }
+.editor-container.zen-mode .code-editor-wrapper, .editor-container.zen-mode .markdown-wrapper { height: 100dvh !important }
+.code-editor-wrapper { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative }
+.code-editor-wrapper > div { flex: 1 1 auto; height: 100%; min-height: 0; overflow: hidden; position: relative }
+.CodeMirror { height: 100% !important; font-family: var(--font-mono); font-size: 14px; line-height: 1.6; background: var(--bg-primary) !important; color: var(--text-primary) !important }
+.CodeMirror-scroll { height: 100% !important; overflow-y: scroll !important; margin-right: -50px; padding-right: 50px }
+.CodeMirror-gutters { background: var(--bg-secondary) !important; border-right: 1px solid var(--border-color) !important }
+.CodeMirror-linenumber { color: var(--text-faint) !important; font-size: 0.85em; padding: 0 12px 0 8px }
+.CodeMirror-cursor { border-left: 2px solid var(--accent-primary) !important }
+.CodeMirror-selected { background: var(--accent-glow) !important }
+.CodeMirror-line::selection, .CodeMirror-line > span::selection, .CodeMirror-line > span > span::selection { background: var(--accent-glow) }
+.CodeMirror-activeline-background { background: var(--bg-tertiary) !important }
+.CodeMirror-foldmarker { color: var(--accent-primary); font-family: var(--font-sans); font-size: 0.8em; padding: 0 4px; background: var(--accent-glow); border-radius: 3px }
+.CodeMirror-foldgutter { width: 14px }
+.CodeMirror-foldgutter-open, .CodeMirror-foldgutter-folded { color: var(--text-muted); font-size: 0.8em }
+.CodeMirror-foldgutter-open::after { content: "▼" }
+.CodeMirror-foldgutter-folded::after { content: "▶" }
+.cm-trailingspace { background: var(--error-dim) }
+.cm-matchhighlight { background: var(--accent-glow) }
+.cm-searching { background: var(--warning-dim); border-radius: 2px }
+.CodeMirror-dialog { background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 8px 12px; box-shadow: var(--shadow-lg); color: var(--text-primary) }
+.CodeMirror-dialog input { background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: var(--radius-sm); color: var(--text-primary); padding: 6px 10px; font-family: var(--font-sans); outline: none }
+.CodeMirror-dialog input:focus { border-color: var(--accent-primary); box-shadow: 0 0 0 2px var(--accent-glow) }
+.CodeMirror-dialog button { background: var(--bg-hover); border: 1px solid var(--border-color); border-radius: var(--radius-sm); color: var(--text-primary); padding: 4px 10px; margin-left: 6px; cursor: pointer; font-family: var(--font-sans); font-size: 0.8rem }
+.CodeMirror-dialog button:hover { background: var(--bg-active) }
+.CodeMirror-scrollbar-filler, .CodeMirror-gutter-filler { background: transparent !important }
+.CodeMirror-simplescroll-horizontal, .CodeMirror-simplescroll-vertical { background: transparent }
+.CodeMirror-simplescroll-horizontal div, .CodeMirror-simplescroll-vertical div { background: var(--bg-hover); border-radius: 4px; border: none }
+.CodeMirror-simplescroll-horizontal div:hover, .CodeMirror-simplescroll-vertical div:hover { background: var(--bg-active) }
+.CodeMirror-vscrollbar, .CodeMirror-hscrollbar { display: block !important }
+.CodeMirror-hints { background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md); box-shadow: var(--shadow-lg); font-family: var(--font-mono); font-size: 0.85rem }
+.CodeMirror-hint { color: var(--text-primary); padding: 6px 10px; border-radius: var(--radius-sm) }
+.CodeMirror-hint-active { background: var(--accent-primary); color: white }
 /*        .CodeMirror-simplescroll-horizontal,.CodeMirror-simplescroll-vertical{display:block!important} */
         .markdown-wrapper{flex:1;display:flex;overflow:hidden;position:relative}
         .markdown-editor-pane{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
