@@ -229,7 +229,7 @@
       'sidebar', 'sidebarOverlay', 'fileTree', 'sidebarSearch',
       'toggleSidebar', 'openSettings', 'openCommandPalette',
       'newFile', 'newFolder', 'collapseAll', 'openPreview',
-      'fileTabs', 'breadcrumb',
+      'fileTabs', 'breadcrumb', 'btnPreview',
       'toolbar', 'formatToolbar', 'viewToolbar', 'codeToolbar',
       'editorContainer', 'welcomeScreen', 'codeEditorWrapper',
       'markdownWrapper', 'markdownEditorPane', 'markdownPreviewPane',
@@ -258,7 +258,7 @@
       'btnUndo', 'btnRedo', 'btnCut', 'btnCopy', 'btnPaste',
       'btnSave', 'btnFind', 'btnExport',
       'btnBold', 'btnItalic', 'btnHeading', 'btnLink', 'btnImage', 'btnCode', 'btnQuote', 'btnList', 'btnTable',
-      'btnPreview', 'btnSplit', 'btnFormat', 'btnMinify',
+      'btnPreview1', 'btnSplit', 'btnFormat', 'btnMinify',
       'welcomeNewFile', 'welcomeOpenFile', 'welcomeOpenFolder',
       'recentFiles', 'recentFilesList', 'clearAllRecent',
       'logoBtn',
@@ -2183,6 +2183,7 @@ function openGitMoireInline() {
   function bindEvents() {
     // Title bar
     DOM.toggleSidebar.addEventListener('click', () => toggleSidebar());
+    DOM.btnPreview.addEventListener('click', openPreview);
     DOM.openSettings.addEventListener('click', () => { populateSettings(); openModal(DOM.settingsModal); });
     DOM.openCommandPalette.addEventListener('click', showCommandPalette);
     DOM.newFile.addEventListener('click', openNewFileModal);
@@ -2243,7 +2244,7 @@ function openGitMoireInline() {
     DOM.btnTable.addEventListener('click', () => insertMarkdown('table'));
 
     // View toolbar
-    DOM.btnPreview.addEventListener('click', openPreview);
+    DOM.btnPreview1.addEventListener('click', openPreview);
     DOM.btnSplit.addEventListener('click', () => setMarkdownView('split'));
 
     // Code toolbar
