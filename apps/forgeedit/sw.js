@@ -10,7 +10,7 @@
    ============================================================ */
 
 const APP_NAME = 'forgeedit';
-const CACHE_VERSION = '20260531c';
+const CACHE_VERSION = '20260531d';
 
 const STATIC_CACHE = `${APP_NAME}-static-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `${APP_NAME}-runtime-${CACHE_VERSION}`;
@@ -21,6 +21,7 @@ const BASE_PATH = BASE_URL.pathname;
 // Aset inti yang harus ada untuk app bisa hidup offline
 const PRECACHE_PATHS = [
   'index.html',
+  'preview.html',
   'style.css',
   'script.js',
   'manifest.json',
