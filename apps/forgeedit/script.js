@@ -773,6 +773,20 @@
     }
   }
 
+  async function saveAllDrafts() {
+    for (const tab of state.openTabs) {
+      const content = state.fileContents[tab.path] ?? '';
+      const data = await dbGet('files', tab.path);
+      if (data) {
+        data.content = content;
+        data.modified = Date.now();
+        data.size = new Blob([content]).size;
+        await dbPut('files', data);
+        tab.modified = false;
+      }
+    }
+  }
+
 // ============================================================
 // ===== GITMOIRE BRIDGE (MINIMAL REFACTOR) =====
 // ============================================================
@@ -2393,8 +2407,11 @@ function openGitMoireInline() {
         e.preventDefault();
         e.returnValue = '';
       }
-      // Auto-save before leaving
-      if (state.settings.autoSave) autoSaveAll();
+    
+      if (state.settings.autoSave) {
+        void autoSaveAll();
+        void saveAllDrafts();
+      }
     });
 
     // Online/offline status
@@ -2465,10 +2482,19 @@ function registerSW() {
       }, 3600000);
 
       // Listen for controller change dengan pengaman flag
-      navigator.serviceWorker.addEventListener('controllerchange', () => {
-        if (refreshing) return; // Jika sedang proses refresh, abaikan
+      navigator.serviceWorker.addEventListener('controllerchange', async () => {
+        if (refreshing) return;
         refreshing = true;
-        console.log('[ForgeEdit PWA] ✅ SW controller changed! Page will reload...');
+      
+        console.log('[ForgeEdit PWA] ✅ SW controller changed! Saving before reload...');
+      
+        try {
+          await autoSaveAll();
+          await saveAllDrafts();
+        } catch (err) {
+          console.error('[ForgeEdit PWA] Auto-save before reload failed:', err);
+        }
+      
         location.reload();
       });
 
