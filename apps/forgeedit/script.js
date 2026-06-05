@@ -356,10 +356,12 @@
       const hasChildren = Object.keys(entry.children).length > 0;
       const isActive = state.activeTab === entry.path;
       const isOpen = entry.open;
-      html += `<li class="file-tree-item ${isActive ? 'active' : ''}" data-path="${entry.path}" data-type="${entry.type}" style="padding-left:${8 + depth * 18}px">
+      const safePath = feEscapeHtml(entry.path);
+      const safeName = feEscapeHtml(entry.name);
+      html += `<li class="file-tree-item ${isActive ? 'active' : ''}" data-path="${safePath}" data-type="${entry.type}" style="padding-left:${8 + depth * 18}px">
         <span class="tree-toggle ${isFolder && isOpen ? 'expanded' : ''}" style="visibility:${isFolder || hasChildren ? 'visible' : 'hidden'}">${isFolder || hasChildren ? '&#9654;' : ''}</span>
         <span class="tree-icon ${isFolder ? (isOpen ? 'folder-open' : 'folder') : ''}">${fileIcon(entry.name, isFolder, isOpen)}</span>
-        <span class="file-name">${entry.name}</span>
+        <span class="file-name">${safeName}</span>
         <div class="file-actions">
           <button class="icon-btn" data-action="rename" title="Rename" style="width:20px;height:20px;font-size:11px">&#9998;</button>
           <button class="icon-btn" data-action="delete" title="Delete" style="width:20px;height:20px;font-size:11px">&#128465;</button>
@@ -629,11 +631,13 @@
     if (!DOM.fileTabs) return;
     DOM.fileTabs.innerHTML = state.openTabs.map(tab => {
       const isActive = tab.path === state.activeTab;
-      return `<div class="file-tab ${isActive ? 'active' : ''}" data-path="${tab.path}">
+      const safePath = feEscapeHtml(tab.path);
+      const safeName = feEscapeHtml(tab.name);
+      return `<div class="file-tab ${isActive ? 'active' : ''}" data-path="${safePath}">
         <span class="tab-icon">${fileIcon(tab.name, false)}</span>
-        <span class="tab-name">${tab.name}</span>
+        <span class="tab-name">${safeName}</span>
         ${tab.modified ? '<span class="tab-dot"></span>' : ''}
-        <span class="close-tab" data-close="${tab.path}">&times;</span>
+        <span class="close-tab" data-close="${safePath}">&times;</span>
       </div>`;
     }).join('');
 
@@ -718,16 +722,20 @@
       return;
     }
     DOM.recentFiles.style.display = 'block';
-    DOM.recentFilesList.innerHTML = state.recentFiles.slice(0, 8).map(r => `
-      <div class="recent-file-item" data-path="${r.path}">
+    DOM.recentFilesList.innerHTML = state.recentFiles.slice(0, 8).map(r => {
+      const safePath = feEscapeHtml(r.path);
+      const safeName = feEscapeHtml(r.name);
+      return `
+      <div class="recent-file-item" data-path="${safePath}">
         <span>${fileIcon(r.name, false)}</span>
         <div class="recent-file-info">
-          <div class="recent-file-name">${r.name}</div>
+          <div class="recent-file-name">${safeName}</div>
           <div class="recent-file-meta">${formatTime(r.time)}</div>
-          <div class="recent-file-path">${r.path}</div>
+          <div class="recent-file-path">${safePath}</div>
         </div>
       </div>
-    `).join('');
+      `;
+    }).join('');
     DOM.recentFilesList.querySelectorAll('.recent-file-item').forEach(item => {
       item.addEventListener('click', () => openFile(item.dataset.path));
     });
@@ -1150,7 +1158,7 @@ function openGitMoireInline() {
     DOM.newFileName.value = 'untitled.txt';
     const allFolders = (await dbGetAll('files')).filter(f => f.type === 'folder');
     const paths = ['/', ...allFolders.map(f => f.path)];
-    DOM.newFileLocation.innerHTML = paths.map(p => `<option value="${p}">${p}</option>`).join('');
+    DOM.newFileLocation.innerHTML = paths.map(p => { const safePath = feEscapeHtml(p); return `<option value="${safePath}">${safePath}</option>`; }).join('');
     DOM.newFileType.innerHTML = [
       'txt', 'html', 'css', 'js', 'ts', 'json', 'md', 'py', 'rb', 'go', 'rs', 'java', 'c', 'cpp',
       'php', 'sql', 'sh', 'yaml', 'xml', 'dockerfile', 'vue', 'jsx', 'tsx', 'sass', 'less', 'env'
@@ -1194,7 +1202,7 @@ function openGitMoireInline() {
   async function openNewFolderModal() {
     DOM.newFolderName.value = 'new-folder';
     const allFolders = (await dbGetAll('files')).filter(f => f.type === 'folder');
-    const paths = ['/', ...allFolders.map(f => f.path)];
+    DOM.newFolderLocation.innerHTML = paths.map(p => { const safePath = feEscapeHtml(p); return `<option value="${safePath}">${safePath}</option>`; }).join('');
     DOM.newFolderLocation.innerHTML = paths.map(p => `<option value="${p}">${p}</option>`).join('');
     openModal(DOM.newFolderModal);
     DOM.newFolderName.focus();
@@ -2175,7 +2183,9 @@ function openGitMoireInline() {
     const parts = state.activeTab.split('/').filter(Boolean);
     DOM.breadcrumb.innerHTML = parts.map((p, i) => {
       const path = parts.slice(0, i + 1).join('/');
-      return `<span class="breadcrumb-item ${i === parts.length - 1 ? 'active' : ''}" data-path="${path}">${p}</span>`;
+      const safePath = feEscapeHtml(path);
+      const safeName = feEscapeHtml(p);
+      return `<span class="breadcrumb-item ${i === parts.length - 1 ? 'active' : ''}" data-path="${safePath}">${safeName}</span>`;
     }).join('');
   }
 
@@ -2690,7 +2700,48 @@ function closePreview() {
 
     initGitMoireBridge();
     bindInstallEvents();
+    
+    // Handle URL action parameters from PWA shortcuts
+    handleUrlActions();
+    
     console.log('[ForgeEdit Pro] Initialized');
+  }
+  
+  /* ───────────── URL Action Handler ───────────── */
+  function handleUrlActions() {
+    const params = new URLSearchParams(window.location.search);
+    const action = params.get('action');
+    
+    if (!action) return;
+    
+    // Delay execution to ensure UI is ready
+    setTimeout(() => {
+      switch(action) {
+        case 'newfile':
+          if (typeof openNewFileModal === 'function') {
+            openNewFileModal();
+          }
+          break;
+        case 'openfile':
+          // Trigger file import dialog
+          const fileInput = document.getElementById('importFileInput');
+          if (fileInput) {
+            fileInput.click();
+          }
+          break;
+        case 'settings':
+          if (typeof populateSettings === 'function' && typeof openModal === 'function') {
+            populateSettings();
+            openModal(DOM.settingsModal);
+          }
+          break;
+      }
+      
+      // Clean up URL without reloading
+      if (window.history && window.history.replaceState) {
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+    }, 500);
   }
 
   // Boot
