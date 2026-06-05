@@ -2629,7 +2629,7 @@ function ensurePreviewOverlay() {
 
       <iframe
         id="forgeedit-preview-frame"
-        sandbox="allow-scripts allow-forms allow-modals allow-pointer-lock allow-popups"
+        sandbox="allow-scripts allow-forms allow-modals allow-pointer-lock allow-popups allow-same-origin"
         style="width:100%;height:100%;border:0;background:#fff;"
       ></iframe>
     </div>
