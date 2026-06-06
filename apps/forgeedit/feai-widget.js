@@ -12,7 +12,7 @@
   const CONFIG = {
     APP_KEY: 'forgeedit_ai_fusion',
     DB_NAME: 'ForgeEditDB',
-    DB_VERSION: 2,
+    DB_VERSION: 3,
     STORE_FILES: 'files',
     DEFAULT_TTL_HOURS: 24,
     MAX_TTL_HOURS: 336, // 14 hari * 24 jam
@@ -140,17 +140,45 @@ class ForgeEditDB {
 
   async init() {
     return new Promise((resolve, reject) => {
-      const req = indexedDB.open(CONFIG.DB_NAME, CONFIG.DB_VERSION); // DB_VERSION harus 2
+      // Gunakan versi yang sama dengan script.js untuk menghindari konflik
+      const req = indexedDB.open(CONFIG.DB_NAME, CONFIG.DB_VERSION);
       req.onupgradeneeded = (e) => {
         const db = e.target.result;
-        // Hanya buat store 'files' jika belum ada (jaga-jaga jika widget dijalankan duluan)
+        // Pastikan semua store yang diperlukan ada
         if (!db.objectStoreNames.contains('files')) {
-          db.createObjectStore('files', { keyPath: 'path' });
+          const s = db.createObjectStore('files', { keyPath: 'path' });
+          s.createIndex('parent', 'parent', { unique: false });
+          s.createIndex('type', 'type', { unique: false });
+          s.createIndex('modified', 'modified', { unique: false });
         }
-        // Store 'settings' dan 'snippets' adalah milik editor, tidak perlu dibuat di sini.
+        if (!db.objectStoreNames.contains('settings')) {
+          db.createObjectStore('settings', { keyPath: 'key' });
+        }
+        if (!db.objectStoreNames.contains('snippets')) {
+          db.createObjectStore('snippets', { keyPath: 'id' });
+        }
       };
-      req.onsuccess = (e) => { this.db = e.target.result; resolve(); };
-      req.onerror = (e) => reject(e.target.error);
+      req.onsuccess = (e) => { 
+        this.db = e.target.result; 
+        console.log('[ForgeEdit AI] Database connected');
+        resolve(); 
+      };
+      req.onerror = (e) => {
+        console.error('[ForgeEdit AI] Database error:', e.target.error);
+        reject(e.target.error);
+      };
+      req.onblocked = () => {
+        console.warn('[ForgeEdit AI] Database blocked by another tab. Waiting...');
+        // Jangan reject, biarkan retry otomatis saat tab lain ditutup
+        setTimeout(() => {
+          if (this.db) {
+            resolve();
+          } else {
+            // Retry lagi setelah beberapa detik
+            this.init().then(resolve).catch(reject);
+          }
+        }, 3000);
+      };
     });
   }
 
@@ -649,6 +677,11 @@ class ForgeEditDB {
     async renderContextTree() {
       const treeContainer = this.els.ctxTree;
       try {
+        // Cek apakah database tersedia
+        if (!this.db || !this.db.db) {
+          treeContainer.innerHTML = '<div class="feai-empty">Database not available. Open a file in ForgeEdit first.</div>';
+          return;
+        }
         const files = await this.db.getAll(CONFIG.STORE_FILES);
         const tree = this._buildTree(files);
         const { expandedFolders, searchQuery } = this.store.state.ui;
@@ -718,7 +751,13 @@ class ForgeEditDB {
     }
 
     async init() {
-      await this.db.init();
+      try {
+        await this.db.init();
+      } catch (err) {
+        console.error('[ForgeEdit AI] Failed to initialize database:', err);
+        // Fallback: tetap jalankan tanpa database, widget akan menggunakan localStorage saja
+        console.warn('[ForgeEdit AI] Running in fallback mode without IndexedDB');
+      }
       // Load settings from localStorage
       const savedSettings = LocalStore.load('settings', null);
       if (savedSettings) {
@@ -776,7 +815,7 @@ class ForgeEditDB {
 
       // Build context payload
       let contextStr = '';
-      if (settings.useContext) {
+      if (settings.useContext && this.db && this.db.db) {
         // Add file contents from context paths
         for (const path of this.store.state.contextPaths) {
           try {
