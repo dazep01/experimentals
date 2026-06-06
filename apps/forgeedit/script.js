@@ -8,7 +8,7 @@
 
   /* ───────────── IndexedDB Layer ───────────── */
   const DB_NAME = 'ForgeEditDB';
-  const DB_VER = 2;
+  const DB_VER = 3;
   let db = null;
 
   function openDB() {
@@ -31,6 +31,10 @@
       };
       req.onsuccess = (e) => { db = e.target.result; resolve(db); };
       req.onerror = (e) => reject(e.target.error);
+      req.onblocked = (e) => {
+        console.warn('[ForgeEdit] Database upgrade blocked. Please close all tabs and reload.');
+        reject(new Error('Database upgrade blocked'));
+      };
     });
   }
 
@@ -2675,11 +2679,6 @@ function ensurePreviewOverlay() {
 
   return overlay;
 }
-
-// Attach ke semua tombol dengan class toggle-preview
-document.querySelectorAll('.toggle-preview').forEach(btn => {
-  btn.addEventListener('click', openPreview);
-});
 
 function openPreview() {
   const overlay = ensurePreviewOverlay();
