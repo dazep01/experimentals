@@ -345,7 +345,6 @@ class ForgeEditDB {
       const style = document.createElement('style');
       style.textContent = `
         :root {
-        :root {
           --feai-bg: #0d1117;
           --feai-bg2: #232b3c;
           --feai-panel: rgba(13, 17, 23, 0.96);
