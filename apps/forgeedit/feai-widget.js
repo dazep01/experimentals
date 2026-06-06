@@ -345,6 +345,7 @@ class ForgeEditDB {
       const style = document.createElement('style');
       style.textContent = `
         :root {
+        :root {
           --feai-bg: #0d1117;
           --feai-bg2: #232b3c;
           --feai-panel: rgba(13, 17, 23, 0.96);
@@ -366,21 +367,21 @@ class ForgeEditDB {
         .feai-launcher:hover { transform: scale(1.05); filter: brightness(1.1); }
         .feai-panel { pointer-events: auto; position: fixed; right: 0; bottom: 0; width: min(50vw, 780px); height: 90dvh; max-height: 90dvh; background: var(--feai-panel); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border: 1px solid var(--feai-border); border-bottom: none; border-radius: 25px 25px 0 0; box-shadow: var(--feai-shadow); display: flex; flex-direction: column; opacity: 0; transform: translateY(30px); visibility: hidden; transition: all 0.25s cubic-bezier(0.4,0,0.2,1); z-index: 5000010; }
         .feai-panel.open { opacity: 1; transform: translateY(0); visibility: visible; }
-        .feai-header { padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--feai-border); background: rgba(255,255,255,0.02); }
-        .feai-brand { display: flex; align-items: center; gap: 12px; }
+        .feai-header { padding: 16px 20px; display: flex; flex-direction: column; border-bottom: 1px solid var(--feai-border); background: rgba(255,255,255,0.02); gap: 10px; }
+        .feai-brand { display: flex; align-items: center; gap: 12px; margin-left: 0; padding-left: 0; }
         .feai-logo { width: 38px; height: 38px; border-radius: 12px; background: var(--feai-gradient); display: grid; place-items: center; box-shadow: 0 0 12px rgba(88,166,255,0.3); }
         .feai-logo svg { width: 20px; height: 20px; color: #fff; }
         .feai-title { font-size: 16px; font-weight: 700; letter-spacing: -0.3px; }
         .feai-subtitle { font-size: 12px; color: var(--feai-muted); margin-top: 2px; }
-        .feai-header-actions { display: flex; gap: 6px; }
-        .feai-icon-btn { width: 36px; height: 36px; border-radius: 10px; background: rgba(255,255,255,0.05); border: 1px solid var(--feai-border); color: var(--feai-text); cursor: pointer; display: grid; place-items: center; transition: all 0.15s; }
+        .feai-header-actions { display: flex; margin: auto; gap: 6px; margin-right: 0; padding-right: 0; }
+        .feai-icon-btn { width: 36px; height: 36px; border-radius: 10px; background: rgba(255,255,255,0.15); border: 1px solid var(--feai-border); color: var(--feai-text); cursor: pointer; display: grid; place-items: center; transition: all 0.15s;  box-shadow: var(--feai-shadow); }
         .feai-icon-btn:hover { background: rgba(255,255,255,0.1); }
         .feai-body { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--feai-bg2); }
         .feai-messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
-        .feai-msg { max-width: 85%; padding: 12px 16px; border-radius: 16px; font-size: 14px; line-height: 1.6; white-space: pre-wrap; word-break: break-word; animation: feaiFadeIn 0.25s ease; }
+        .feai-msg { max-width: 85%; padding: 12px 16px; border-radius: 16px; font-size: 14px; line-height: 1.6; white-space: pre-wrap; word-break: break-word; animation: feaiFadeIn 0.25s ease; margin-bottom: 20px; }
         @keyframes feaiFadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-        .feai-msg.user { align-self: flex-end; background: rgba(88,166,255,0.15); border: 1px solid rgba(88,166,255,0.25); border-bottom-right-radius: 4px; }
-        .feai-msg.ai { align-self: flex-start; background: rgba(255,255,255,0.05); border: 1px solid var(--feai-border); border-bottom-left-radius: 4px; }
+        .feai-msg.user { align-self: flex-end; background: #333f58; box-shadow: var(--feai-shadow); border-bottom-right-radius: 0; }
+        .feai-msg.ai { align-self: flex-start; background: #495458; box-shadow: var(--feai-shadow); border-bottom-left-radius: 0; }
         .feai-msg.system { align-self: center; background: transparent; color: var(--feai-muted); font-size: 12px; border: none; }
         .feai-code-wrap { background: #161b22; border-radius: 10px; margin: 8px 0; border: 1px solid var(--feai-border); overflow: hidden; }
         .feai-code-header { display: flex; justify-content: space-between; padding: 6px 12px; background: rgba(255,255,255,0.04); font-size: 11px; color: var(--feai-muted); }
@@ -421,7 +422,7 @@ class ForgeEditDB {
       const root = document.createElement('div');
       root.id = 'feai-root';
       root.innerHTML = `
-        <div class="feai-backdrop" id="feai-backdrop"></div>
+      <div class="feai-backdrop" id="feai-backdrop"></div>
         <button class="feai-launcher" id="feai-launcher" title="ForgeEdit AI (Ctrl+K)">
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor"><path d="M19.094 5.332c1.294 1.366 1.837 3.231 2.067 5.846.608 0 1.175.134 1.558.656l.715.97c.206.278.316.612.316.958v2.634c0 .34-.17.672-.444.872-3.238 2.372-7.235 4.279-11.306 4.279-4.504 0-9.013-2.595-11.306-4.279a1.1 1.1 0 0 1-.444-.872v-2.634c0-.346.11-.681.314-.96l.716-.968c.383-.52.952-.656 1.56-.656.229-2.615.77-4.48 2.066-5.846 2.443-2.588 5.677-2.873 7.053-2.879H12c1.351 0 4.627.265 7.094 2.879M12.001 9.68c-.279 0-.6.016-.942.05-.12.45-.299.854-.558 1.113-1.029 1.028-2.268 1.187-2.932 1.187-.624 0-1.279-.13-1.812-.467-.506.166-.99.405-1.023 1.001-.054 1.128-.058 2.254-.063 3.38q-.002.849-.013 1.698a.86.86 0 0 0 .5.77c2.43 1.107 4.729 1.665 6.844 1.665 2.112 0 4.41-.558 6.84-1.666a.86.86 0 0 0 .499-.77c.03-1.69.006-3.388-.075-5.077h.002c-.032-.6-.519-.835-1.026-1.002-.534.336-1.186.468-1.81.468-.664 0-1.903-.159-2.932-1.187-.26-.259-.438-.664-.558-1.113a10 10 0 0 0-.94-.05Zm-2.473 4.033c.528 0 .956.427.956.955v1.761a.955.955 0 1 1-1.911 0v-1.761c0-.528.428-.955.955-.955m4.896 0c.528 0 .956.427.956.955v1.761a.956.956 0 0 1-1.911 0v-1.761c0-.528.427-.955.955-.955m-6.698-8.66c-1.028.102-1.895.44-2.335.91-.955 1.043-.75 3.687-.206 4.245.397.397 1.146.661 1.953.661.617 0 1.792-.132 2.762-1.116.425-.412.69-1.44.66-2.483-.029-.837-.264-1.527-.616-1.82-.382-.339-1.249-.486-2.218-.397m6.33.396c-.352.294-.587.984-.617 1.822-.029 1.042.235 2.07.661 2.482.97.984 2.145 1.116 2.762 1.116.807 0 1.556-.264 1.953-.66.543-.559.749-3.203-.206-4.245-.44-.47-1.307-.808-2.335-.911-.97-.088-1.836.059-2.218.397ZM12 7.594c-.235 0-.514.014-.822.044.029.161.044.338.058.529 0 .132 0 .264-.015.41.294-.029.544-.029.779-.029s.485 0 .778.03c-.014-.147-.014-.28-.014-.411a5 5 0 0 1 .058-.53A9 9 0 0 0 12 7.595Z"/></svg>
         </button>
@@ -438,7 +439,7 @@ class ForgeEditDB {
               <button class="feai-icon-btn" id="feai-btn-context" title="Context"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="#ffffff"><g fill="none" stroke="#ffffff" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M16 2v5h5"/><path d="M21 6v6.5c0 .8-.7 1.5-1.5 1.5h-7c-.8 0-1.5-.7-1.5-1.5v-9c0-.8.7-1.5 1.5-1.5H17l4 4z"/><path d="M7 8v8.8c0 .3.2.6.4.8c.2.2.5.4.8.4H15"/><path d="M3 12v8.8c0 .3.2.6.4.8c.2.2.5.4.8.4H11"/></g></svg></button>
               <button class="feai-icon-btn" id="feai-btn-upload" title="Upload files"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="#ffffff"><g fill="none" stroke="#ffffff" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242M12 12v9"/><path d="m16 16l-4-4l-4 4"/></g></svg></button>
               <button class="feai-icon-btn" id="feai-btn-settings" title="Settings"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="#ffffff"><g fill="none" stroke="#ffffff" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><rect width="6" height="14" x="4" y="5" rx="2"/><rect width="6" height="10" x="14" y="7" rx="2"/><path d="M17 22v-5m0-10V2M7 22v-3M7 5V2"/></g></svg></button>
-              <button class="feai-icon-btn" id="feai-btn-close" title="Close"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="#ffffff"><path fill="none" stroke="#ffffff" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 6L6 18M6 6l12 12"/></svg></button>
+              <button class="feai-icon-btn" id="feai-btn-close" title="Close"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 6L6 18M6 6l12 12"/></svg></button>
             </div>
           </header>
           <div class="feai-body">
