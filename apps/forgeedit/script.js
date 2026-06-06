@@ -530,9 +530,10 @@
     if (state.editors[path]) {
       const ed = state.editors[path];
       const wrapperEl = ed.getWrapperElement();
-      wrapperEl.style.display = '';
+      wrapperEl.style.display = 'block';
       wrapperEl.style.position = 'absolute';
       wrapperEl.style.inset = '0';
+      wrapperEl.style.height = '100%';
       ed.refresh();
       ed.focus();
       return;
@@ -540,7 +541,7 @@
     const wrapper = DOM.codeEditorWrapper;
     const div = document.createElement('div');
     div.id = 'cm-' + path.replace(/[^a-zA-Z0-9]/g, '_');
-    div.style.cssText = 'position:absolute;inset:0;height:100%;';
+    div.style.cssText = 'position:absolute;inset:0;height:100%;display:block;';
     wrapper.appendChild(div);
 
     const mode = getModeForFile(name);
@@ -590,9 +591,10 @@
     if (state.mdEditors[path]) {
       const ed = state.mdEditors[path];
       const wrapperEl = ed.getWrapperElement();
-      wrapperEl.style.display = '';
+      wrapperEl.style.display = 'block';
       wrapperEl.style.position = 'absolute';
       wrapperEl.style.inset = '0';
+      wrapperEl.style.height = '100%';
       ed.refresh();
       ed.focus();
       return;
@@ -602,7 +604,11 @@
     const oldCm = pane.querySelector('.CodeMirror');
     if (oldCm) oldCm.remove();
 
-    const ed = CodeMirror(pane, {
+    const div = document.createElement('div');
+    div.style.cssText = 'position:absolute;inset:0;height:100%;display:block;';
+    pane.appendChild(div);
+
+    const ed = CodeMirror(div, {
       value: content,
       mode: 'markdown',
       theme: state.settings.editorTheme,
