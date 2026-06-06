@@ -3,12 +3,14 @@
 __pycache__/
 *.o
 *.obj
-*.class
 *.exe
 *.dll
 *.so
 *.a
 *.out
+dist/
+build/
+target/
 
 # Dependencies
 node_modules/
@@ -18,20 +20,11 @@ venv/
 .env.local
 *.env.*
 
-# Build directories
-dist/
-build/
-target/
-.gradle/
-
-# Python specific
-*.pyc
-__pycache__/
-.mypy_cache/
-.pytest_cache/
-.coverage
-coverage/
-htmlcov/
+# Logs and temp files
+*.log
+*.tmp
+*.swp
+*.swo
 
 # Editors
 .vscode/
@@ -43,9 +36,18 @@ htmlcov/
 .DS_Store
 Thumbs.db
 
-# Logs and temp files
-*.log
-*.tmp
+# Coverage
+coverage/
+htmlcov/
+.coverage
+
+# Python specific
+.mypy_cache/
+.pytest_cache/
+
+# Java/Gradle
+.gradle/
+*.class
 
 # Compressed files
 *.zip

@@ -143,7 +143,8 @@
 .editor-container.zen-mode { position: fixed; inset: 0; z-index: 9999 }
 .editor-container.zen-mode .code-editor-wrapper, .editor-container.zen-mode .markdown-wrapper { height: 100dvh !important }
 .code-editor-wrapper { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative }
-.code-editor-wrapper > div { flex: 1 1 auto; height: 100%; min-height: 0; overflow: hidden; position: relative }
+.code-editor-wrapper > div { flex: 1 1 auto; height: 100%; min-height: 0; overflow: hidden; position: absolute; inset: 0; display: none }
+.code-editor-wrapper > div:not([style*="display: none"]):not([style*="display:none"]) { position: absolute; inset: 0 }
 .CodeMirror { height: 100% !important; font-family: var(--font-mono); font-size: 14px; line-height: 1.6; background: var(--bg-primary) !important; color: var(--text-primary) !important }
 .CodeMirror-scroll { height: 100% !important; overflow-y: scroll !important; margin-right: -50px; padding-right: 50px }
 .CodeMirror-gutters { background: var(--bg-secondary) !important; border-right: 1px solid var(--border-color) !important }
