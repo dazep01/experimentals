@@ -8,7 +8,7 @@
 
   /* ───────────── IndexedDB Layer ───────────── */
   const DB_NAME = 'ForgeEditDB';
-  const DB_VER = 1;
+  const DB_VER = 2;
   let db = null;
 
   function openDB() {
