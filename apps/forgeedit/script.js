@@ -32,8 +32,16 @@
       req.onsuccess = (e) => { db = e.target.result; resolve(db); };
       req.onerror = (e) => reject(e.target.error);
       req.onblocked = (e) => {
-        console.warn('[ForgeEdit] Database upgrade blocked. Please close all tabs and reload.');
-        reject(new Error('Database upgrade blocked'));
+        console.warn('[ForgeEdit] Database upgrade blocked. Trying to proceed with existing connection...');
+        // Jangan reject, biarkan mencoba menggunakan koneksi yang ada jika memungkinkan
+        // atau tunggu sampai tab lain ditutup
+        setTimeout(() => {
+          if (db) {
+            resolve(db);
+          } else {
+            reject(new Error('Database upgrade blocked. Please close all tabs using ForgeEdit and reload.'));
+          }
+        }, 2000);
       };
     });
   }
@@ -1000,7 +1008,7 @@ async function showSendToGitMoireModal() {
     return Array.from(listEl.querySelectorAll('.fgm-check:checked')).map(el => el.value);
   }
 
-  function closeModal() {
+  function closeGitMoireModal() {
     overlay.remove();
     document.body.style.overflow = '';
   }
@@ -1053,7 +1061,7 @@ async function showSendToGitMoireModal() {
         'success'
       );
 
-      closeModal();
+      closeGitMoireModal();
 
       if (openAfter) {
         openGitMoireInline();
@@ -1064,18 +1072,18 @@ async function showSendToGitMoireModal() {
     }
   }
 
-  overlay.querySelector('#fgm-close').onclick = closeModal;
-  overlay.querySelector('#fgm-cancel').onclick = closeModal;
+  overlay.querySelector('#fgm-close').onclick = closeGitMoireModal;
+  overlay.querySelector('#fgm-cancel').onclick = closeGitMoireModal;
   overlay.querySelector('#fgm-send').onclick = () => sendToBridge(false);
   overlay.querySelector('#fgm-send-open').onclick = () => sendToBridge(true);
   overlay.querySelector('#fgm-open').onclick = () => {
-    closeModal();
+    closeGitMoireModal();
     openGitMoireInline();
   };
 
   searchEl.addEventListener('input', () => renderList(searchEl.value));
   overlay.addEventListener('click', (e) => {
-    if (e.target === overlay) closeModal();
+    if (e.target === overlay) closeGitMoireModal();
   });
 
   renderList();
