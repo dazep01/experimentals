@@ -133,33 +133,49 @@
   // ===========================================================================
   // INDEXEDDB ADAPTER (khusus file editor)
   // ===========================================================================
-  class ForgeEditDB {
-    constructor() {
-      this.db = null;
-    }
-
-    async init() {
-      return new Promise((resolve, reject) => {
-        const req = indexedDB.open(CONFIG.DB_NAME, CONFIG.DB_VERSION);
-        req.onsuccess = (e) => { this.db = e.target.result; resolve(); };
-        req.onerror = (e) => reject(e.target.error);
-      });
-    }
-
-    async get(storeName, key) { return this._tx(storeName, 'readonly', s => s.get(key)); }
-    async put(storeName, data) { return this._tx(storeName, 'readwrite', s => s.put(data)); }
-    async getAll(storeName) { return this._tx(storeName, 'readonly', s => s.getAll()); }
-
-    _tx(store, mode, cb) {
-      return new Promise((resolve, reject) => {
-        const tx = this.db.transaction(store, mode);
-        const objStore = tx.objectStore(store);
-        const req = cb(objStore);
-        tx.oncomplete = () => resolve(req ? req.result : null);
-        tx.onerror = () => reject(tx.error);
-      });
-    }
+class ForgeEditDB {
+  constructor() {
+    this.db = null;
   }
+
+  async init() {
+    return new Promise((resolve, reject) => {
+      const req = indexedDB.open(CONFIG.DB_NAME, CONFIG.DB_VERSION); // DB_VERSION harus 2
+      req.onupgradeneeded = (e) => {
+        const db = e.target.result;
+        // Hanya buat store 'files' jika belum ada (jaga-jaga jika widget dijalankan duluan)
+        if (!db.objectStoreNames.contains('files')) {
+          db.createObjectStore('files', { keyPath: 'path' });
+        }
+        // Store 'settings' dan 'snippets' adalah milik editor, tidak perlu dibuat di sini.
+      };
+      req.onsuccess = (e) => { this.db = e.target.result; resolve(); };
+      req.onerror = (e) => reject(e.target.error);
+    });
+  }
+
+  async get(storeName, key) {
+    return this._tx(storeName, 'readonly', s => s.get(key));
+  }
+
+  async put(storeName, data) {
+    return this._tx(storeName, 'readwrite', s => s.put(data));
+  }
+
+  async getAll(storeName) {
+    return this._tx(storeName, 'readonly', s => s.getAll());
+  }
+
+  _tx(store, mode, cb) {
+    return new Promise((resolve, reject) => {
+      const tx = this.db.transaction(store, mode);
+      const objStore = tx.objectStore(store);
+      const req = cb(objStore);
+      tx.oncomplete = () => resolve(req ? req.result : null);
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+}
 
   // ===========================================================================
   // STATE MANAGEMENT (Reactive Store)
