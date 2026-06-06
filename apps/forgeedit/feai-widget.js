@@ -19,7 +19,6 @@
 (function () {
   'use strict';
 
-  // ==================== KONFIGURASI ====================
   const CONFIG = {
     APP_KEY: 'forgeedit_ai_widget_v2',
     MAX_TTL_HOURS: 168,
@@ -154,7 +153,6 @@
     }
   };
 
-  // ==================== STATE ====================
   let db = null;
   let isPanelOpen = false;
   let isSettingsOpen = false;
@@ -189,7 +187,6 @@
     }
   };
 
-  // ==================== DOM ELEMENTS ====================
   let els = {};
 
   function createDOM() {
@@ -359,7 +356,6 @@
     };
   }
 
-  // ==================== UTILITY ====================
   const now = () => Date.now();
   const clampTTL = (h) => Math.max(24, Math.min(CONFIG.MAX_TTL_HOURS, Number(h || CONFIG.DEFAULT_TTL_HOURS)));
   const safeText = (v) => String(v ?? '')
@@ -367,7 +363,7 @@
     .replace(/</g, '&lt;')
     .replace(/>/g,
       '&gt;')
-    .replace(/"/g, '&quot;')
+    .replace(/\"/g, '&quot;')
     .replace(/'/g, '&#39;');
   const storageKey = (name) => `${CONFIG.APP_KEY}:${name}`;
 
@@ -406,7 +402,6 @@
     localStorage.removeItem(storageKey(key));
   }
 
-  // ==================== SETTINGS ====================
   function loadSettings() {
     const stored = loadJSON('settings', null);
     if (stored && typeof stored === 'object') Object.assign(state.settings, stored);
@@ -461,7 +456,6 @@
     syncSettingsInputs();
   }
 
-  // ==================== MESSAGES ====================
   function loadMessages() {
     const msgs = loadJSON('history', []);
     state.messages = Array.isArray(msgs) ? msgs : [];
@@ -521,7 +515,6 @@
     renderMessages();
   }
 
-  // ==================== UI ====================
   function updateSubtitle() {
     if (!els.subtitle) return;
     els.subtitle.textContent =
@@ -532,12 +525,25 @@
     els.badgeContext.textContent = `${state.contextPaths.size} context`;
   }
 
+  function isModalOpen() {
+    return isSettingsOpen || isContextOpen;
+  }
+
+  function updateBackdrop() {
+    if (!els.backdrop) return;
+    if (isPanelOpen || isModalOpen()) {
+      els.backdrop.classList.add('open');
+    } else {
+      els.backdrop.classList.remove('open');
+    }
+  }
+
   function openPanel() {
     if (!els.panel) return;
     els.panel.classList.add('open');
-    els.backdrop.classList.add('open');
     els.panel.setAttribute('aria-hidden', 'false');
     isPanelOpen = true;
+    updateBackdrop();
     if (state.settings.rememberUI) saveJSON('ui', {
         panelOpen: true,
         expanded: state.ui.panelExpanded
@@ -549,11 +555,11 @@
   function closePanel() {
     if (!els.panel) return;
     els.panel.classList.remove('open');
-    els.backdrop.classList.remove('open');
     els.panel.setAttribute('aria-hidden', 'true');
+    isPanelOpen = false;
     closeModal('settings');
     closeModal('context');
-    isPanelOpen = false;
+    updateBackdrop();
     if (state.settings.rememberUI) saveJSON('ui', {
         panelOpen: false,
         expanded: state.ui.panelExpanded
@@ -578,7 +584,7 @@
       isContextOpen = true;
       renderContextTree();
     }
-    if (els.backdrop) els.backdrop.classList.add('open');
+    updateBackdrop();
   }
 
   function closeModal(which) {
@@ -592,7 +598,7 @@
       els.contextModal.setAttribute('aria-hidden', 'true');
       isContextOpen = false;
     }
-    if (!isPanelOpen && els.backdrop) els.backdrop.classList.remove('open');
+    updateBackdrop();
   }
 
   function applyExpandedState() {
@@ -616,10 +622,9 @@
   function saveDraft() {
     if (!state.settings.rememberUI) return;
     saveJSON('draft', {
-        input: els.input?.value || '',
-        expanded: state.ui.panelExpanded
-      }, state.settings
-      .ttlHours);
+      input: els.input?.value || '',
+      expanded: state.ui.panelExpanded
+    }, state.settings.ttlHours);
   }
 
   function loadDraft() {
@@ -636,7 +641,6 @@
     draftTimer = setTimeout(saveDraft, 300);
   }
 
-  // ==================== INDEXEDDB ====================
   async function openDB() {
     return new Promise((resolve, reject) => {
       const req = indexedDB.open(CONFIG.DB_NAME, CONFIG.DB_VER);
@@ -848,13 +852,12 @@
       name: file.name,
       type: file.type || 'application/octet-stream',
       size: file.size,
-      lastModified: file.lastModified,
+      lastModified: file.lastMethod,
       content: null
     }));
     state.uploadFiles = items;
     saveJSON('uploads', items, state.settings.ttlHours);
     addMessage('system', `📎 ${items.length} file ditambahkan ke konteks upload.`);
-    // juga tambahkan ke context tree virtual
     items.forEach(f => {
       const path = `uploads/${f.name}`;
       if (!contextTree.children.has('uploads')) {
@@ -893,7 +896,6 @@
     renderContextTree();
   }
 
-  // ==================== AI API ====================
   async function sendMessage() {
     if (!els.input) return;
     const text = els.input.value.trim();
@@ -947,9 +949,7 @@
     let headers = {
       'Content-Type': 'application/json'
     };
-    if (state.settings.provider === 'gemini') {
-      // Gemini menggunakan API key di URL
-    } else if (state.settings.provider === 'groq') {
+    if (state.settings.provider === 'gemini') {} else if (state.settings.provider === 'groq') {
       headers['Authorization'] = `Bearer ${apiKey}`;
     } else if (state.settings.provider === 'openrouter') {
       headers['Authorization'] = `Bearer ${apiKey}`;
@@ -994,7 +994,7 @@
         if (text) fullText += text;
       }
     }
-    // proses sisa buffer
+
     if (buffer.trim()) {
       const dataStr = buffer.trim()
         .startsWith('data: ') ? buffer.trim()
@@ -1037,11 +1037,15 @@
     return data.choices?.[0]?.message?.content || '';
   }
 
-  // ==================== EVENT BINDING ====================
   function bindEvents() {
     els.launcher?.addEventListener('click', togglePanel);
-    els.backdrop?.addEventListener('click', () => {
-      if (isPanelOpen) closePanel();
+    els.backdrop?.addEventListener('click', (e) => {
+      // Hanya tutup jika klik benar-benar di backdrop (bukan event yang bubble dari child)
+      if (e.target === els.backdrop) {
+        if (isContextOpen) closeModal('context');
+        else if (isSettingsOpen) closeModal('settings');
+        else if (isPanelOpen) closePanel();
+      }
     });
     els.closeChat?.addEventListener('click', closePanel);
     els.openSettings?.addEventListener('click', () => openModal('settings'));
@@ -1119,19 +1123,18 @@
     });
   }
 
-  // ==================== INJECT CSS ====================
   function injectCSS() {
     const style = document.createElement('style');
     style.textContent = `
             :root{--feai-bg:rgba(18,20,28,0.86);--feai-bg-2:rgba(26,29,40,0.92);--feai-panel:rgba(20,23,33,0.98);--feai-border:rgba(255,255,255,0.10);--feai-text:#e9edf7;--feai-muted:rgba(233,237,247,0.70);--feai-accent:#7c9cff;--feai-accent-2:#8d6bff;--feai-success:#2ecc71;--feai-danger:#ff667a;--feai-warning:#ffbf69;--feai-shadow:0 28px 80px rgba(0,0,0,0.45);--feai-radius:25px 25px 0 0;--feai-radius-lg:22px;--feai-font:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
             #feai-root,#feai-root *{box-sizing:border-box}
-            #feai-root{position:fixed;right:18px;bottom:0;z-index:2147483647;font-family:var(--feai-font);color:var(--feai-text);pointer-events:none}
-            .feai-launcher{pointer-events:auto;position:fixed;right:18px;bottom:18px;width:58px;height:58px;border-radius:18px;border:1px solid rgba(255,255,255,.12);background:linear-gradient(145deg,rgba(124,156,255,.96),rgba(141,107,255,.96));color:#fff;box-shadow:0 18px 40px rgba(124,156,255,.35),0 8px 18px rgba(0,0,0,.24);display:grid;place-items:center;cursor:pointer;transform:translateZ(0);transition:transform .18s ease,box-shadow .18s ease;user-select:none}
+            #feai-root{position:fixed;right:18px;bottom:0;z-index:4500000;font-family:var(--feai-font);color:var(--feai-text);pointer-events:none}
+            .feai-launcher{pointer-events:auto;position:fixed;right:18px;bottom:18px;width:58px;height:58px;border-radius:18px;border:1px solid rgba(255,255,255,.12);background:linear-gradient(145deg,rgba(124,156,255,.96),rgba(141,107,255,.96));color:#fff;box-shadow:0 18px 40px rgba(124,156,255,.35),0 8px 18px rgba(0,0,0,.24);display:grid;place-items:center;cursor:pointer;transform:translateZ(0);transition:transform .18s ease,box-shadow .18s ease;user-select:none;z-index:5000002}
             .feai-launcher:hover{transform:translateY(-2px) scale(1.02);box-shadow:0 22px 48px rgba(124,156,255,.42),0 10px 22px rgba(0,0,0,.26)}
             .feai-launcher:active{transform:translateY(0) scale(.98)}
             .feai-launcher svg{width:28px;height:28px}
-            .feai-panel{pointer-events:auto;position:fixed;right:18px;bottom:0;width:min(50vw,720px);height:min(90vh,900px);max-height:90vh;min-width:360px;background:linear-gradient(180deg,rgba(21,24,34,.98),rgba(14,17,25,.98));border:1px solid var(--feai-border);border-bottom:none;border-radius:var(--feai-radius);box-shadow:var(--feai-shadow);overflow:hidden;display:flex;flex-direction:column;opacity:0;transform:translateY(24px) scale(.98);visibility:hidden;transition:opacity .18s ease,transform .18s ease,visibility .18s ease;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
-            .feai-panel.open{opacity:1;transform:translateY(0) scale(1);visibility:visible}
+            .feai-panel{pointer-events:auto;position:fixed;right:18px;bottom:0;width:min(50vw,720px);height:min(90vh,900px);max-height:90vh;min-width:360px;background:linear-gradient(180deg,rgba(21,24,34,.98),rgba(14,17,25,.98));border:1px solid var(--feai-border);border-bottom:none;border-radius:var(--feai-radius);box-shadow:var(--feai-shadow);overflow:hidden;display:flex;flex-direction:column;opacity:0;transform:translateY(24px) scale(.98);visibility:hidden;transition:opacity .18s ease,transform .18s ease,visibility .18s ease;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);z-index:5000010}
+            .feai-panel.open{opacity:1;transform:translateY(0) scale(1);visibility:visible; z-index:5000010;}
             .feai-header{padding:14px 16px 12px;display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid rgba(255,255,255,.08);background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,0))}
             .feai-brand{display:flex;align-items:center;gap:12px;min-width:0}
             .feai-logo{width:42px;height:42px;border-radius:14px;background:linear-gradient(145deg,rgba(124,156,255,.95),rgba(141,107,255,.95));display:grid;place-items:center;box-shadow:0 10px 24px rgba(124,156,255,.24);flex:0 0 auto}
@@ -1178,9 +1181,9 @@
             .feai-mini-actions{display:flex;flex-wrap:wrap;gap:6px}
             .feai-mini-btn{border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.04);color:var(--feai-text);border-radius:999px;padding:6px 9px;cursor:pointer;font-size:11px;transition:.16s ease}
             .feai-mini-btn:hover{background:rgba(255,255,255,.08)}
-            .feai-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.28);opacity:0;pointer-events:none;transition:opacity .18s ease;z-index:2147483646}
+            .feai-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.28);opacity:0;pointer-events:none;transition:opacity .18s ease;z-index:5000005}
             .feai-backdrop.open{opacity:1;pointer-events:auto}
-            .feai-modal{position:fixed;right:18px;bottom:86px;width:min(50vw,720px);max-width:calc(100vw - 36px);max-height:85vh;border-radius:22px;background:linear-gradient(180deg,rgba(23,27,38,.98),rgba(14,17,25,.98));border:1px solid var(--feai-border);box-shadow:var(--feai-shadow);overflow:hidden;z-index:2147483648;display:none;flex-direction:column;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+            .feai-modal{position:fixed;right:18px;bottom:86px;width:min(50vw,720px);max-width:calc(100vw - 36px);max-height:85vh;border-radius:22px;background:linear-gradient(180deg,rgba(23,27,38,.98),rgba(14,17,25,.98));border:1px solid var(--feai-border);box-shadow:var(--feai-shadow);overflow:hidden;z-index:5000015;display:none;flex-direction:column;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
             .feai-modal.open{display:flex}
             .feai-modal-head{padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;justify-content:space-between;align-items:center;gap:12px}
             .feai-modal-title{font-size:14px;font-weight:800}
@@ -1218,9 +1221,7 @@
     document.head.appendChild(style);
   }
 
-  // ==================== INIT ====================
   async function init() {
-    // Cegah inisialisasi ganda
     if (document.getElementById('feai-root')) {
       console.warn('[ForgeEditAI] Widget sudah ada di halaman.');
       return;
@@ -1255,7 +1256,6 @@
 
     if (state.settings.autoOpen) openPanel();
 
-    // Expose API global
     window.ForgeEditAI = {
       open: openPanel,
       close: closePanel,
@@ -1263,9 +1263,11 @@
       addMessage,
       addToContext(path, name, type = 'file') {
         const normalized = normalizePath(path);
-        if (!contextTree.children.has(name)) {
-          contextTree.children.set(name, {
-            name,
+        const nodeName = normalized.split('/')
+          .pop() || name;
+        if (!contextTree.children.has(nodeName)) {
+          contextTree.children.set(nodeName, {
+            name: nodeName,
             path: normalized,
             type,
             parent: '/',
@@ -1305,7 +1307,6 @@
       'color:#7c9cff;font-weight:bold;', '', 'color:#8b8fa0;');
   }
 
-  // Jalankan saat DOM siap
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {
