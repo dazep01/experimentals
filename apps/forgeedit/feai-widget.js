@@ -12,7 +12,7 @@
   const CONFIG = {
     APP_KEY: 'forgeedit_ai_fusion',
     DB_NAME: 'ForgeEditDB',
-    DB_VERSION: 1,
+    DB_VERSION: 2,
     STORE_FILES: 'files',
     DEFAULT_TTL_HOURS: 24,
     MAX_TTL_HOURS: 336, // 14 hari * 24 jam
