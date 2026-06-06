@@ -481,10 +481,20 @@
 
     // Hide all CodeMirror instances
     Object.entries(state.editors).forEach(([p, ed]) => {
-      if (ed && ed.getWrapperElement) ed.getWrapperElement().style.display = 'none';
+      if (ed && ed.getWrapperElement) {
+        const el = ed.getWrapperElement();
+        el.style.display = 'none';
+        el.style.position = '';
+        el.style.inset = '';
+      }
     });
     Object.entries(state.mdEditors).forEach(([p, ed]) => {
-      if (ed && ed.getWrapperElement) ed.getWrapperElement().style.display = 'none';
+      if (ed && ed.getWrapperElement) {
+        const el = ed.getWrapperElement();
+        el.style.display = 'none';
+        el.style.position = '';
+        el.style.inset = '';
+      }
     });
 
     const name = data.name || getFileName(path);
@@ -519,7 +529,10 @@
   async function ensureCodeEditor(path, content, name) {
     if (state.editors[path]) {
       const ed = state.editors[path];
-      ed.getWrapperElement().style.display = '';
+      const wrapperEl = ed.getWrapperElement();
+      wrapperEl.style.display = '';
+      wrapperEl.style.position = 'absolute';
+      wrapperEl.style.inset = '0';
       ed.refresh();
       ed.focus();
       return;
@@ -527,6 +540,7 @@
     const wrapper = DOM.codeEditorWrapper;
     const div = document.createElement('div');
     div.id = 'cm-' + path.replace(/[^a-zA-Z0-9]/g, '_');
+    div.style.cssText = 'position:absolute;inset:0;height:100%;';
     wrapper.appendChild(div);
 
     const mode = getModeForFile(name);
@@ -575,7 +589,10 @@
   async function ensureMarkdownEditor(path, content, name) {
     if (state.mdEditors[path]) {
       const ed = state.mdEditors[path];
-      ed.getWrapperElement().style.display = '';
+      const wrapperEl = ed.getWrapperElement();
+      wrapperEl.style.display = '';
+      wrapperEl.style.position = 'absolute';
+      wrapperEl.style.inset = '0';
       ed.refresh();
       ed.focus();
       return;
@@ -718,10 +735,20 @@
     DOM.markdownWrapper.style.display = 'none';
     DOM.imagePreview.style.display = 'none';
     Object.values(state.editors).forEach(ed => {
-      if (ed && ed.getWrapperElement) ed.getWrapperElement().style.display = 'none';
+      if (ed && ed.getWrapperElement) {
+        const el = ed.getWrapperElement();
+        el.style.display = 'none';
+        el.style.position = '';
+        el.style.inset = '';
+      }
     });
     Object.values(state.mdEditors).forEach(ed => {
-      if (ed && ed.getWrapperElement) ed.getWrapperElement().style.display = 'none';
+      if (ed && ed.getWrapperElement) {
+        const el = ed.getWrapperElement();
+        el.style.display = 'none';
+        el.style.position = '';
+        el.style.inset = '';
+      }
     });
     updateToolbarForFile(null);
     loadRecentFiles();
@@ -2045,9 +2072,19 @@ function openGitMoireInline() {
       state.openTabs = [];
       state.activeTab = null;
       state.fileContents = {};
-      Object.keys(state.editors).forEach(k => { const el = state.editors[k]?.getWrapperElement(); if (el?.parentNode) el.parentNode.removeChild(el); });
+      Object.keys(state.editors).forEach(k => {
+        const el = state.editors[k]?.getWrapperElement();
+        if (el?.parentNode) {
+          el.parentNode.removeChild(el);
+        }
+      });
       state.editors = {};
-      Object.keys(state.mdEditors).forEach(k => { const el = state.mdEditors[k]?.getWrapperElement(); if (el?.parentNode) el.parentNode.removeChild(el); });
+      Object.keys(state.mdEditors).forEach(k => {
+        const el = state.mdEditors[k]?.getWrapperElement();
+        if (el?.parentNode) {
+          el.parentNode.removeChild(el);
+        }
+      });
       state.mdEditors = {};
       state.recentFiles = [];
       renderTabs();
