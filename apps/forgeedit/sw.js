@@ -24,6 +24,7 @@ const PRECACHE_PATHS = [
   'preview.html',
   'style.css',
   'script.js',
+  'feai-widget.js',
   'manifest.json',
   'icons/icon.svg',
   'icons/icon-72x72.png',
