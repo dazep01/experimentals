@@ -52,7 +52,7 @@ self.addEventListener('install', (event) => {
 
     const results = await Promise.allSettled(
       PRECACHE_URLS.map(async (url) => {
-        const response = await fetch(url, { cache: 'reload' });
+        const response = await fetch(url, { cache: 'default' });
         if (!response.ok) {
           throw new Error(`Precache failed: ${url} (${response.status})`);
         }
@@ -73,7 +73,8 @@ self.addEventListener('install', (event) => {
       console.warn('[ForgeEdit SW] Some precache items failed:', failed);
     }
 
-    await self.skipWaiting();
+    // DON'T call skipWaiting() here - let the new worker wait until user is ready
+    // await self.skipWaiting();
   })());
 });
 
@@ -95,7 +96,8 @@ self.addEventListener('activate', (event) => {
       }
     }
 
-    await self.clients.claim();
+    // DON'T call clients.claim() here - let the new worker take control on next reload
+    // await self.clients.claim();
   })());
 });
 

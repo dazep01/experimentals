@@ -32,16 +32,20 @@
       req.onsuccess = (e) => { db = e.target.result; resolve(db); };
       req.onerror = (e) => reject(e.target.error);
       req.onblocked = (e) => {
-        console.warn('[ForgeEdit] Database upgrade blocked. Trying to proceed with existing connection...');
+        console.warn('[ForgeEdit] Database upgrade blocked. This usually means another tab is still using an old version.');
+        console.warn('[ForgeEdit] Please close other ForgeEdit tabs or refresh them to complete the upgrade.');
         // Jangan reject, biarkan mencoba menggunakan koneksi yang ada jika memungkinkan
         // atau tunggu sampai tab lain ditutup
         setTimeout(() => {
           if (db) {
+            console.log('[ForgeEdit] Using existing database connection');
             resolve(db);
           } else {
-            reject(new Error('Database upgrade blocked. Please close all tabs using ForgeEdit and reload.'));
+            // Jangan paksa reload, biarkan user memutuskan kapan akan reload
+            console.error('[ForgeEdit] Database upgrade blocked. Please close all tabs using ForgeEdit and refresh manually when ready.');
+            reject(new Error('Database upgrade blocked. Please close other ForgeEdit tabs and refresh manually.'));
           }
-        }, 2000);
+        }, 5000);
       };
     });
   }
@@ -2536,22 +2540,23 @@ function registerSW() {
         reg.update().catch(() => {});
       }, 3600000);
 
-      // Listen for controller change dengan pengaman flag
-      navigator.serviceWorker.addEventListener('controllerchange', async () => {
-        if (refreshing) return;
-        refreshing = true;
-      
-        console.log('[ForgeEdit PWA] ✅ SW controller changed! Saving before reload...');
-      
-        try {
-          await autoSaveAll();
-          await saveAllDrafts();
-        } catch (err) {
-          console.error('[ForgeEdit PWA] Auto-save before reload failed:', err);
-        }
-      
-        location.reload();
-      });
+      // Listen for controller change - REMOVED auto-reload to prevent data loss
+      // User can manually reload if needed after update
+      // navigator.serviceWorker.addEventListener('controllerchange', async () => {
+      //   if (refreshing) return;
+      //   refreshing = true;
+      // 
+      //   console.log('[ForgeEdit PWA] ✅ SW controller changed! Saving before reload...');
+      // 
+      //   try {
+      //     await autoSaveAll();
+      //     await saveAllDrafts();
+      //   } catch (err) {
+      //     console.error('[ForgeEdit PWA] Auto-save before reload failed:', err);
+      //   }
+      // 
+      //   location.reload();
+      // });
 
       // Listen for update
       reg.addEventListener('updatefound', () => {
@@ -2564,9 +2569,9 @@ function registerSW() {
           if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
             // Cek apakah fungsi showToast tersedia sebelum dipanggil
             if (typeof showToast === 'function') {
-              showToast('Update available! Close and reopen to update.', 'info', 8000);
+              showToast('Update available! Refresh manually when ready.', 'info', 8000);
             } else {
-              console.log('[ForgeEdit PWA] Update available! Silakan muat ulang halaman.');
+              console.log('[ForgeEdit PWA] Update available! Silakan refresh halaman secara manual.');
             }
           }
         });
