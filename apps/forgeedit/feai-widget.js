@@ -587,8 +587,19 @@ class ForgeEditDB {
       this.els.setClearAll.addEventListener('click', () => { store.clearAll(); store.setUI({ activeModal: null }); });
       // Context modal
       this.els.ctxSearch.addEventListener('input', (e) => store.setUI({ searchQuery: e.target.value }));
-      this.els.ctxSelectAll.addEventListener('click', () => this._selectAllContext(true));
-      this.els.ctxClear.addEventListener('click', () => this._selectAllContext(false));
+      this.els.ctxSelectAll.addEventListener('click', () => {
+        this._selectAllContext(true);
+        // Also update store immediately for real-time feedback
+        const cbs = this.els.ctxTree.querySelectorAll('input[type=checkbox]');
+        const paths = [];
+        cbs.forEach(cb => { if (cb.checked) paths.push(cb.dataset.path); });
+        store.setContext(paths);
+      });
+      this.els.ctxClear.addEventListener('click', () => {
+        this._selectAllContext(false);
+        // Also update store immediately for real-time feedback
+        store.setContext([]);
+      });
       this.els.ctxApply.addEventListener('click', () => {
         const checkboxes = this.els.ctxTree.querySelectorAll('input[type=checkbox]');
         const paths = [];
@@ -679,10 +690,12 @@ class ForgeEditDB {
       try {
         // Cek apakah database tersedia
         if (!this.db || !this.db.db) {
+          console.warn('[ForgeEdit AI] Database not available for context tree');
           treeContainer.innerHTML = '<div class="feai-empty">Database not available. Open a file in ForgeEdit first.</div>';
           return;
         }
         const files = await this.db.getAll(CONFIG.STORE_FILES);
+        console.log('[ForgeEdit AI] Loaded', files.length, 'files for context tree');
         const tree = this._buildTree(files);
         const { expandedFolders, searchQuery } = this.store.state.ui;
         const buildHTML = (node) => {
@@ -714,7 +727,28 @@ class ForgeEditDB {
             if (path) this.store.toggleFolder(path);
           });
         });
-      } catch { treeContainer.innerHTML = '<div class="feai-empty">Failed to load tree.</div>'; }
+        // Event delegation for checkbox changes - FIX: Add real-time context path updates
+        treeContainer.querySelectorAll('input[type=checkbox]').forEach(cb => {
+          cb.addEventListener('change', (e) => {
+            e.stopPropagation();
+            const path = cb.dataset.path;
+            if (!path) return;
+            const currentPaths = Array.from(this.store.state.contextPaths);
+            if (cb.checked) {
+              if (!currentPaths.includes(path)) currentPaths.push(path);
+            } else {
+              const idx = currentPaths.indexOf(path);
+              if (idx > -1) currentPaths.splice(idx, 1);
+            }
+            console.log('[ForgeEdit AI] Context updated via checkbox:', path, 'checked:', cb.checked, 'total paths:', currentPaths.length);
+            this.store.setContext(currentPaths);
+          });
+        });
+        console.log('[ForgeEdit AI] Context tree rendered, checkboxes:', treeContainer.querySelectorAll('input[type=checkbox]').length);
+      } catch (err) {
+        console.error('[ForgeEdit AI] Error rendering context tree:', err);
+        treeContainer.innerHTML = '<div class="feai-empty">Failed to load tree.</div>';
+      }
     }
 
     _buildTree(flatFiles) {
@@ -815,18 +849,25 @@ class ForgeEditDB {
 
       // Build context payload
       let contextStr = '';
+      console.log('[ForgeEdit AI] sendMessage called, useContext:', settings.useContext, 'contextPaths:', this.store.state.contextPaths.size);
       if (settings.useContext && this.db && this.db.db) {
         // Add file contents from context paths
         for (const path of this.store.state.contextPaths) {
           try {
             const fileData = await this.db.get(CONFIG.STORE_FILES, path);
+            console.log('[ForgeEdit AI] Loading context file:', path, 'found:', !!fileData?.content);
             if (fileData && fileData.content) contextStr += `\nFile: ${path}\n${fileData.content}\n---`;
-          } catch {}
+          } catch (err) {
+            console.error('[ForgeEdit AI] Error loading context file:', path, err);
+          }
         }
         // Add uploaded files info
         if (this.store.state.uploadFiles.length) {
           contextStr += '\n[Uploaded files]\n' + this.store.state.uploadFiles.map(f => `- ${f.name}`).join('\n');
         }
+        console.log('[ForgeEdit AI] Context built, length:', contextStr.length);
+      } else {
+        console.warn('[ForgeEdit AI] Context not loaded. useContext:', settings.useContext, 'db available:', !!(this.db && this.db.db));
       }
       // Dapatkan provider
       const provider = ProviderFactory.get(settings.provider);
