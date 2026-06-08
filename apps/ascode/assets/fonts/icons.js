@@ -29,7 +29,7 @@
 
         /* Class untuk ikon Anda */
         .raa-copilot:before {
-            content: "\e900";
+            content: "\\e900";
         }
     `;
     document.head.appendChild(style);
