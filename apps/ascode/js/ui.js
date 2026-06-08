@@ -6,9 +6,9 @@
  * FIX #13: Removed dead contextmenu code
  * Includes: Modal, Toast, Context Menu, Command Palette, Terminal, Sidebar rendering, Copilot panel
  */
-window.VS = window.VS || {};
+window.AS = window.AS || {};
 
-VS.UI = (function() {
+AS.UI = (function() {
   'use strict';
 
   var bottomPanelVisible = true;
@@ -85,10 +85,10 @@ VS.UI = (function() {
     menu.querySelectorAll('.ctx-item').forEach(function(item) {
       item.addEventListener('click', async function() {
         var action = item.dataset.action;
-        if (action === 'newFile') VS.App.showNewFileDialog(node.path);
-        else if (action === 'newFolder') VS.App.showNewFolderDialog(node.path);
-        else if (action === 'rename') VS.App.renameItem(node.path);
-        else if (action === 'delete') VS.App.deleteItem(node.path, node.type);
+        if (action === 'newFile') AS.App.showNewFileDialog(node.path);
+        else if (action === 'newFolder') AS.App.showNewFolderDialog(node.path);
+        else if (action === 'rename') AS.App.renameItem(node.path);
+        else if (action === 'delete') AS.App.deleteItem(node.path, node.type);
         menu.remove();
       });
     });
@@ -114,25 +114,25 @@ VS.UI = (function() {
 
   function getCommands() {
     return [
-      { label: 'New File', icon: 'fa-file-medical', keybind: 'Ctrl+N', action: function() { VS.App.showNewFileDialog(); } },
-      { label: 'New Folder', icon: 'fa-folder-plus', keybind: 'Ctrl+Shift+N', action: function() { VS.App.showNewFolderDialog(); } },
-      { label: 'Save File', icon: 'fa-save', keybind: 'Ctrl+S', action: function() { VS.App.saveFile(); } },
-      { label: 'Close Tab', icon: 'fa-times', keybind: 'Ctrl+W', action: function() { var cf = VS.Editor.getCurrentFile(); if (cf) closeTabHandler(cf); } },
+      { label: 'New File', icon: 'fa-file-medical', keybind: 'Ctrl+N', action: function() { AS.App.showNewFileDialog(); } },
+      { label: 'New Folder', icon: 'fa-folder-plus', keybind: 'Ctrl+Shift+N', action: function() { AS.App.showNewFolderDialog(); } },
+      { label: 'Save File', icon: 'fa-save', keybind: 'Ctrl+S', action: function() { AS.App.saveFile(); } },
+      { label: 'Close Tab', icon: 'fa-times', keybind: 'Ctrl+W', action: function() { var cf = AS.Editor.getCurrentFile(); if (cf) closeTabHandler(cf); } },
       { label: 'Toggle Sidebar', icon: 'fa-columns', keybind: 'Ctrl+B', action: function() { toggleSidebar(); } },
       { label: 'Toggle Terminal', icon: 'fa-terminal', keybind: 'Ctrl+`', action: function() { toggleBottomPanel(); } },
       { label: 'Toggle Copilot', icon: 'fa-robot', keybind: 'Ctrl+Shift+I', action: function() { toggleCopilotPanel(); } },
       { label: 'Command Palette', icon: 'fa-terminal', keybind: 'Ctrl+Shift+P', action: function() {} },
-      { label: 'Go to Line', icon: 'fa-arrow-right', keybind: 'Ctrl+G', action: function() { var e = VS.Editor.getEditor(); if (e) e.execCommand('jumpToLine'); } },
-      { label: 'Find', icon: 'fa-search', keybind: 'Ctrl+F', action: function() { var e = VS.Editor.getEditor(); if (e) e.execCommand('find'); } },
-      { label: 'Find and Replace', icon: 'fa-exchange-alt', keybind: 'Ctrl+H', action: function() { var e = VS.Editor.getEditor(); if (e) e.execCommand('replace'); } },
-      { label: 'Beautify Code', icon: 'fa-magic', keybind: '', action: function() { VS.App.executeTool('beautify'); } },
-      { label: 'Minify Code', icon: 'fa-compress-alt', keybind: '', action: function() { VS.App.executeTool('minify'); } },
-      { label: 'Format JSON', icon: 'fa-indent', keybind: '', action: function() { VS.App.executeTool('json-format'); } },
-      { label: 'Toggle Comment', icon: 'fa-comment', keybind: 'Ctrl+/', action: function() { var e = VS.Editor.getEditor(); if (e) e.execCommand('toggleComment'); } },
-      { label: 'Fold All', icon: 'fa-compress', keybind: '', action: function() { var e = VS.Editor.getEditor(); if (e) e.execCommand('foldAll'); } },
-      { label: 'Unfold All', icon: 'fa-expand', keybind: '', action: function() { var e = VS.Editor.getEditor(); if (e) e.execCommand('unfoldAll'); } },
-      { label: 'Select All', icon: 'fa-object-group', keybind: 'Ctrl+A', action: function() { var e = VS.Editor.getEditor(); if (e) e.execCommand('selectAll'); } },
-      { label: 'Soft Wrap', icon: 'fa-text-width', keybind: 'Alt+Z', action: function() { var e = VS.Editor.getEditor(); if (e) e.setOption('lineWrapping', !e.getOption('lineWrapping')); } }
+      { label: 'Go to Line', icon: 'fa-arrow-right', keybind: 'Ctrl+G', action: function() { var e = AS.Editor.getEditor(); if (e) e.execCommand('jumpToLine'); } },
+      { label: 'Find', icon: 'fa-search', keybind: 'Ctrl+F', action: function() { var e = AS.Editor.getEditor(); if (e) e.execCommand('find'); } },
+      { label: 'Find and Replace', icon: 'fa-exchange-alt', keybind: 'Ctrl+H', action: function() { var e = AS.Editor.getEditor(); if (e) e.execCommand('replace'); } },
+      { label: 'Beautify Code', icon: 'fa-magic', keybind: '', action: function() { AS.App.executeTool('beautify'); } },
+      { label: 'Minify Code', icon: 'fa-compress-alt', keybind: '', action: function() { AS.App.executeTool('minify'); } },
+      { label: 'Format JSON', icon: 'fa-indent', keybind: '', action: function() { AS.App.executeTool('json-format'); } },
+      { label: 'Toggle Comment', icon: 'fa-comment', keybind: 'Ctrl+/', action: function() { var e = AS.Editor.getEditor(); if (e) e.execCommand('toggleComment'); } },
+      { label: 'Fold All', icon: 'fa-compress', keybind: '', action: function() { var e = AS.Editor.getEditor(); if (e) e.execCommand('foldAll'); } },
+      { label: 'Unfold All', icon: 'fa-expand', keybind: '', action: function() { var e = AS.Editor.getEditor(); if (e) e.execCommand('unfoldAll'); } },
+      { label: 'Select All', icon: 'fa-object-group', keybind: 'Ctrl+A', action: function() { var e = AS.Editor.getEditor(); if (e) e.execCommand('selectAll'); } },
+      { label: 'Soft Wrap', icon: 'fa-text-width', keybind: 'Alt+Z', action: function() { var e = AS.Editor.getEditor(); if (e) e.setOption('lineWrapping', !e.getOption('lineWrapping')); } }
     ];
   }
 
@@ -192,15 +192,15 @@ VS.UI = (function() {
         }
         break;
       case 'touch':
-        if (parts[1]) VS.App.createFile('/', parts[1]);
+        if (parts[1]) AS.App.createFile('/', parts[1]);
         break;
       case 'mkdir':
-        if (parts[1]) VS.App.createFolder('/', parts[1]);
+        if (parts[1]) AS.App.createFolder('/', parts[1]);
         break;
       case 'rm':
         if (parts[1]) {
           var r = await db.files.get('/' + parts[1]);
-          if (r) VS.App.deleteItem(r.path, r.type);
+          if (r) AS.App.deleteItem(r.path, r.type);
           else terminalLog('Not found');
         }
         break;
@@ -222,8 +222,8 @@ VS.UI = (function() {
           if (file) {
             // FIX #1: Use sandbox instead of new Function
             try {
-              var result = await VS.Sandbox.execute(file.content, 5000);
-              terminalLog(VS.Sandbox.formatResult(result));
+              var result = await AS.Sandbox.execute(file.content, 5000);
+              terminalLog(AS.Sandbox.formatResult(result));
             } catch (e) { terminalLog('Error: ' + e.message); }
           } else terminalLog('File not found');
         } else terminalLog('Usage: node <filename>');
@@ -249,25 +249,25 @@ VS.UI = (function() {
           var folderName = node.name || node.path.split('/').pop() || 'workspace';
           div.innerHTML = '<span class="icon folder"><i class="fas fa-' + (isOpen ? 'folder-open' : 'folder') + '"></i></span><span>' + escapeHtml(folderName) + '</span>';
           (function(n) {
-            div.addEventListener('click', function(e) { e.stopPropagation(); n.expanded = !n.expanded; VS.App.refreshTree(); });
+            div.addEventListener('click', function(e) { e.stopPropagation(); n.expanded = !n.expanded; AS.App.refreshTree(); });
           })(node);
           container.appendChild(div);
           if (isOpen && node.children) renderNodes(node.children, level + 1);
         } else {
-          var fi = VS.Editor.getFileIcon(node.name || node.path);
+          var fi = AS.Editor.getFileIcon(node.name || node.path);
           var fileName = node.name || node.path.split('/').pop();
           div.innerHTML = '<span class="icon ' + escapeHtml(fi.cls) + '"><i class="' + escapeHtml(fi.icon) + '"></i></span><span>' + escapeHtml(fileName) + '</span>';
           (function(n) {
-            div.addEventListener('click', function(e) { e.stopPropagation(); VS.App.openFile(n.path); });
+            div.addEventListener('click', function(e) { e.stopPropagation(); AS.App.openFile(n.path); });
             div.addEventListener('contextmenu', function(e) { showContextMenu(e, n); });
           })(node);
-          if (VS.Editor.getCurrentFile() === node.path) div.classList.add('active-file');
+          if (AS.Editor.getCurrentFile() === node.path) div.classList.add('active-file');
           container.appendChild(div);
         }
       }
     }
     renderNodes(fileTreeData);
-    var tree = VS.Editor.getFileTreeData();
+    var tree = AS.Editor.getFileTreeData();
     if (tree.length === 0 || (tree.length === 1 && tree[0].path === '/')) {
       container.innerHTML += '<div class="empty-state"><i class="fas fa-folder-open"></i><p>Create a file to get started</p></div>';
     }
@@ -284,9 +284,9 @@ VS.UI = (function() {
         '</div>' +
         '<div id="searchResults" style="margin-top:10px"></div>' +
       '</div>';
-    document.getElementById('searchInput').addEventListener('keydown', function(e) { if (e.key === 'Enter') VS.App.performSearch(); });
-    document.getElementById('btnSearch').addEventListener('click', function() { VS.App.performSearch(); });
-    document.getElementById('btnReplace').addEventListener('click', function() { VS.App.performReplace(); });
+    document.getElementById('searchInput').addEventListener('keydown', function(e) { if (e.key === 'Enter') AS.App.performSearch(); });
+    document.getElementById('btnSearch').addEventListener('click', function() { AS.App.performSearch(); });
+    document.getElementById('btnReplace').addEventListener('click', function() { AS.App.performReplace(); });
   }
 
   function renderGit(container) {
@@ -303,32 +303,32 @@ VS.UI = (function() {
           '<p><i class="fas fa-upload" style="color:var(--accent-peach)"></i> Push uploads the current file.</p>' +
         '</div>' +
       '</div>';
-    document.getElementById('ghConnectBtn').addEventListener('click', function() { VS.App.showGitHubModal(); });
+    document.getElementById('ghConnectBtn').addEventListener('click', function() { AS.App.showGitHubModal(); });
     document.getElementById('ghCloneBtn').addEventListener('click', async function() {
-      var token = await VS.Crypto.getGitHubToken();
-      if (!token) { VS.App.showGitHubModal(); return; }
+      var token = await AS.Crypto.getGitHubToken();
+      if (!token) { AS.App.showGitHubModal(); return; }
       var repo = prompt('Nama repo (user/repo):');
-      if (repo) VS.App.cloneRepo(repo);
+      if (repo) AS.App.cloneRepo(repo);
     });
-    document.getElementById('ghPushBtn').addEventListener('click', function() { VS.App.commitAndPush(); });
+    document.getElementById('ghPushBtn').addEventListener('click', function() { AS.App.commitAndPush(); });
   }
 
   function renderTools(container) {
-    var tools = VS.Tools.toolDefs;
+    var tools = AS.Tools.toolDefs;
     container.innerHTML = '<div class="tools-grid">' +
       tools.map(function(t) {
         return '<div class="tool-card ' + t.cls + '" data-tool="' + t.id + '"><i class="' + t.icon + '"></i><span>' + escapeHtml(t.label) + '</span></div>';
       }).join('') + '</div>';
     container.querySelectorAll('.tool-card').forEach(function(el) {
-      el.addEventListener('click', function() { VS.App.executeTool(el.dataset.tool); });
+      el.addEventListener('click', function() { AS.App.executeTool(el.dataset.tool); });
     });
   }
 
   function renderSidebar() {
     var container = document.getElementById('sidebarContent');
     if (!container) return;
-    var panel = VS.Editor.getCurrentPanel();
-    if (panel === 'explorer') renderExplorer(container, VS.Editor.getFileTreeData());
+    var panel = AS.Editor.getCurrentPanel();
+    if (panel === 'explorer') renderExplorer(container, AS.Editor.getFileTreeData());
     else if (panel === 'search') renderSearch(container);
     else if (panel === 'git') renderGit(container);
     else if (panel === 'tools') renderTools(container);
@@ -358,15 +358,15 @@ VS.UI = (function() {
     if (!panel) return;
     if (forceState === true) {
       panel.classList.remove('collapsed');
-      VS.App.updateCopilotSession();
-      VS.App.updateContextDropdown();
+      AS.App.updateCopilotSession();
+      AS.App.updateContextDropdown();
     } else if (forceState === false) {
       panel.classList.add('collapsed');
     } else {
       panel.classList.toggle('collapsed');
       if (!panel.classList.contains('collapsed')) {
-        VS.App.updateCopilotSession();
-        VS.App.updateContextDropdown();
+        AS.App.updateCopilotSession();
+        AS.App.updateContextDropdown();
       }
     }
   }
@@ -380,7 +380,7 @@ VS.UI = (function() {
     div.className = 'chat-msg ' + role;
     if (role === 'assistant') {
       // FIX #2: Use sanitized markdown formatter
-      div.innerHTML = VS.Copilot.formatMarkdown(content);
+      div.innerHTML = AS.Copilot.formatMarkdown(content);
     } else {
       div.textContent = content;
     }
@@ -416,7 +416,7 @@ VS.UI = (function() {
     if (!provider) return;
     var prov = provider.value;
     var infoEl = document.getElementById('sessionInfo');
-    var remaining = VS.Crypto.getSessionRemaining(prov);
+    var remaining = AS.Crypto.getSessionRemaining(prov);
     if (!remaining) {
       infoEl.className = 'session-info';
       infoEl.innerHTML = '<i class="fas fa-circle" style="font-size:7px"></i> No active session';
@@ -428,7 +428,7 @@ VS.UI = (function() {
     }
     var keyInput = document.getElementById('copilotApiKey');
     if (keyInput) {
-      if (VS.Crypto.hasKey(prov)) {
+      if (AS.Crypto.hasKey(prov)) {
         keyInput.value = '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022';
         keyInput.dataset.masked = 'true';
       } else {
@@ -443,8 +443,8 @@ VS.UI = (function() {
     var provider = document.getElementById('copilotProvider');
     var btn = document.getElementById('btnSendCopilot');
     if (!provider || !btn) return;
-    var hasKey = VS.Crypto.hasKey(provider.value);
-    btn.disabled = !hasKey || VS.Copilot.getStreaming();
+    var hasKey = AS.Crypto.hasKey(provider.value);
+    btn.disabled = !hasKey || AS.Copilot.getStreaming();
   }
 
   // ---- Context Dropdown ----
@@ -479,7 +479,7 @@ VS.UI = (function() {
   }
 
   function closeTabHandler(path) {
-    VS.App.closeTab(path);
+    AS.App.closeTab(path);
   }
 
   return {
