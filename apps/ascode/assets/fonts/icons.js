@@ -4,7 +4,7 @@
         @font-face {
             font-family: 'RaaIcons';
             /* Cukup arahkan ke file .woff saja */
-            src: url('./assets/fonts/icomoon.woff') format('woff');
+            src: url('./icomoon.woff') format('woff');
             font-weight: normal;
             font-style: normal;
         }
