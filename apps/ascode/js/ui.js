@@ -250,6 +250,7 @@ AS.UI = (function() {
           div.innerHTML = '<span class="icon folder"><i class="fas fa-' + (isOpen ? 'folder-open' : 'folder') + '"></i></span><span>' + escapeHtml(folderName) + '</span>';
           (function(n) {
             div.addEventListener('click', function(e) { e.stopPropagation(); n.expanded = !n.expanded; AS.App.refreshTree(); });
+            div.addEventListener('contextmenu', function(e) { showContextMenu(e, n); });
           })(node);
           container.appendChild(div);
           if (isOpen && node.children) renderNodes(node.children, level + 1);
