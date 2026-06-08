@@ -8,14 +8,14 @@
  * Session: 7×24 hour max with automatic expiry
  * Storage: localStorage with encrypted payloads
  */
-window.VS = window.VS || {};
+window.AS = window.AS || {};
 
-VS.Crypto = (function() {
+AS.Crypto = (function() {
   'use strict';
 
   const SESSION_MAX_MS = 7 * 24 * 60 * 60 * 1000;
-  const KEY_STORAGE_KEY = 'vscode_pastel_keys';
-  const SALT_STORAGE_KEY = 'vscode_pastel_salt';
+  const KEY_STORAGE_KEY = 'AScode_pastel_keys';
+  const SALT_STORAGE_KEY = 'AScode_pastel_salt';
 
   /**
    * FIX #4: Derive passphrase from origin + random salt instead of hardcoding.
@@ -32,7 +32,7 @@ VS.Crypto = (function() {
       localStorage.setItem(SALT_STORAGE_KEY, salt);
     }
     // Combine origin fingerprint with the random salt
-    const origin = window.location.origin || 'vscode-pastel-local';
+    const origin = window.location.origin || 'AScode-pastel-local';
     return origin + ':' + salt;
   }
 
