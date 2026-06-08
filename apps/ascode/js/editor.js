@@ -6,9 +6,9 @@
  * FIX #12: Debounced tree rebuild for performance
  * FIX #3: Escape HTML in all dynamic content (file names, breadcrumbs, tabs)
  */
-window.VS = window.VS || {};
+window.AS = window.AS || {};
 
-VS.Editor = (function() {
+AS.Editor = (function() {
   'use strict';
 
   var editor = null;
@@ -272,10 +272,10 @@ VS.Editor = (function() {
       '<span class="tab-name">' + escapeHtml(name) + '</span>' +
       '<span class="close-tab"><i class="fas fa-times"></i></span>';
     tab.addEventListener('click', function(e) {
-      if (e.target.closest('.close-tab')) { e.stopPropagation(); VS.UI.closeTabHandler(path); }
-      else VS.App.openFile(path);
+      if (e.target.closest('.close-tab')) { e.stopPropagation(); AS.UI.closeTabHandler(path); }
+      else AS.App.openFile(path);
     });
-    tab.addEventListener('mousedown', function(e) { if (e.button === 1) { e.preventDefault(); VS.UI.closeTabHandler(path); } });
+    tab.addEventListener('mousedown', function(e) { if (e.button === 1) { e.preventDefault(); AS.UI.closeTabHandler(path); } });
     tabsBar.appendChild(tab);
     openTabs.get(path).tabElement = tab;
   }
@@ -377,19 +377,19 @@ VS.Editor = (function() {
       styleActiveLine: true,
       gutters: ['CodeMirror-linenumbers', 'CodeMirror-foldgutter'],
       extraKeys: {
-        'Ctrl-S': function() { VS.App.saveFile(); VS.UI.toast('Saved', 'success'); },
-        'Cmd-S': function() { VS.App.saveFile(); VS.UI.toast('Saved', 'success'); },
+        'Ctrl-S': function() { AS.App.saveFile(); AS.UI.toast('Saved', 'success'); },
+        'Cmd-S': function() { AS.App.saveFile(); AS.UI.toast('Saved', 'success'); },
         'Ctrl-F': 'findPersistent',
         'Ctrl-H': 'replace',
         'Ctrl-G': 'jumpToLine',
         'Ctrl-/': 'toggleComment',
         'Ctrl-Space': function(cm) { cm.showHint({ hint: CodeMirror.hint.anyword, completeSingle: false }); },
-        'Ctrl-Shift-P': function() { VS.UI.openCommandPalette(); },
-        'Ctrl-B': function() { VS.UI.toggleSidebar(); },
-        'Ctrl-`': function() { VS.UI.toggleBottomPanel(); },
-        'Ctrl-W': function() { if (currentFile) VS.UI.closeTabHandler(currentFile); },
+        'Ctrl-Shift-P': function() { AS.UI.openCommandPalette(); },
+        'Ctrl-B': function() { AS.UI.toggleSidebar(); },
+        'Ctrl-`': function() { AS.UI.toggleBottomPanel(); },
+        'Ctrl-W': function() { if (currentFile) AS.UI.closeTabHandler(currentFile); },
         'Alt-Z': function(cm) { cm.setOption('lineWrapping', !cm.getOption('lineWrapping')); },
-        'Ctrl-Shift-I': function() { VS.UI.toggleCopilotPanel(); }
+        'Ctrl-Shift-I': function() { AS.UI.toggleCopilotPanel(); }
       },
       hintOptions: { completeSingle: false },
       placeholder: 'Start coding...'
