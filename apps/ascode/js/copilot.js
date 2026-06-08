@@ -5,9 +5,9 @@
  * FIX #11: Message history pruning (max 50 messages)
  * Provider support: Gemini, Groq, OpenRouter
  */
-window.VS = window.VS || {};
+window.AS = window.AS || {};
 
-VS.Copilot = (function() {
+AS.Copilot = (function() {
   'use strict';
 
   const MAX_MESSAGES = 50;
@@ -127,7 +127,7 @@ VS.Copilot = (function() {
     messages.push({ role: 'user', content: userMsg });
     pruneMessages();
 
-    const systemPrompt = 'You are an expert AI coding assistant integrated into VS Code Pastel editor. ' +
+    const systemPrompt = 'You are an expert AI coding assistant integrated into AS Code Pastel editor. ' +
       'You help with code, debugging, explanations, and best practices. ' +
       'Be concise, accurate, and helpful. Use markdown formatting with code blocks when sharing code.' +
       (contextStr ? '\n\nHere is the current workspace context:\n' + contextStr : '');
