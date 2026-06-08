@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>VS Code Pastel — CodeMirror5 Edition</title>
+
+  <!-- Font Awesome 6 -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- CodeMirror 5 CSS -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/foldgutter.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/show-hint.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/dialog/dialog.min.css">
+
+  <!-- App Stylesheet -->
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+<div class="app">
+  <!-- Title Bar -->
+  <div class="titlebar">
+    <div class="titlebar-menu">
+      <div class="titlebar-menu-item" data-menu="file">File</div>
+      <div class="titlebar-menu-item" data-menu="edit">Edit</div>
+      <div class="titlebar-menu-item" data-menu="view">View</div>
+      <div class="titlebar-menu-item" data-menu="tools">Tools</div>
+      <div class="titlebar-menu-item" data-menu="help">Help</div>
+    </div>
+    <div class="titlebar-title">VS Code Pastel — Workspace</div>
+    <div class="titlebar-controls">
+      <div class="titlebar-btn"><i class="fas fa-minus"></i></div>
+      <div class="titlebar-btn"><i class="far fa-square"></i></div>
+      <div class="titlebar-btn close"><i class="fas fa-times"></i></div>
+    </div>
+  </div>
+
+  <!-- Main Area -->
+  <div class="main">
+    <!-- Activity Bar -->
+    <div class="activity-bar">
+      <div class="activity-item active" data-panel="explorer" title="Explorer"><i class="fas fa-copy"></i></div>
+      <div class="activity-item" data-panel="search" title="Search"><i class="fas fa-search"></i></div>
+      <div class="activity-item" data-panel="git" title="Source Control"><i class="fas fa-code-branch"></i></div>
+      <div class="activity-item" data-panel="tools" title="Tools"><i class="fas fa-wrench"></i></div>
+      <div class="activity-item" data-panel="copilot" title="AI Copilot"><i class="fas fa-robot"></i></div>
+      <div class="activity-spacer"></div>
+      <div class="activity-item bottom-item" data-panel="settings" title="Settings"><i class="fas fa-cog"></i></div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <span id="sidebarTitle">EXPLORER</span>
+        <div class="sidebar-header-actions">
+          <i class="fas fa-file-medical" id="btnNewFile" title="New File"></i>
+          <i class="fas fa-folder-plus" id="btnNewFolder" title="New Folder"></i>
+          <i class="fas fa-sync-alt" id="btnRefresh" title="Refresh"></i>
+        </div>
+      </div>
+      <div class="sidebar-content" id="sidebarContent"></div>
+      <div class="sidebar-resizer" id="sidebarResizer"></div>
+    </div>
+
+    <!-- Editor Area -->
+    <div class="editor-area">
+      <div class="breadcrumbs" id="breadcrumbs"><span>Workspace</span></div>
+      <div class="tabs-bar" id="tabsBar"></div>
+      <div class="editor-wrapper">
+        <div class="code-area" id="codeArea"></div>
+        <div class="minimap" id="minimap"></div>
+      </div>
+      <!-- Bottom Panel -->
+      <div class="bottom-panel" id="bottomPanel" style="height:180px">
+        <div class="bottom-tabs">
+          <div class="bottom-tab active" data-bpanel="terminal"><i class="fas fa-terminal"></i> Terminal</div>
+          <div class="bottom-tab" data-bpanel="output"><i class="fas fa-list"></i> Output</div>
+          <div class="bottom-tab" data-bpanel="problems"><i class="fas fa-exclamation-triangle"></i> Problems <span class="badge" id="problemCount" style="display:none">0</span></div>
+        </div>
+        <div class="bottom-content" id="bottomContent">
+          <div class="terminal-line"><span class="prompt">~/workspace</span> <span class="cmd">Ready.</span></div>
+          <div class="terminal-input-wrap">
+            <span class="prompt">$</span>
+            <input class="terminal-input" id="terminalInput" placeholder="Type a command..." spellcheck="false">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Copilot Panel -->
+    <div class="copilot-panel collapsed" id="copilotPanel">
+      <div class="copilot-header">
+        <h3><i class="fas fa-robot"></i> AI Copilot</h3>
+        <i class="fas fa-times" style="cursor:pointer;color:var(--text-muted);padding:4px;border-radius:var(--radius-sm);transition:var(--transition)" id="closeCopilot"></i>
+      </div>
+      <div class="copilot-settings" id="copilotSettings">
+        <div class="copilot-setting-group">
+          <label>Provider</label>
+          <select id="copilotProvider">
+            <option value="gemini">Google Gemini</option>
+            <option value="groq">Groq</option>
+            <option value="openrouter">OpenRouter</option>
+          </select>
+        </div>
+        <div class="copilot-setting-group">
+          <label>API Key</label>
+          <div class="copilot-key-row">
+            <input type="password" id="copilotApiKey" placeholder="Enter your API key...">
+            <button class="btn-save" id="btnSaveKey">Save</button>
+            <button class="btn-clear" id="btnClearKey"><i class="fas fa-trash"></i></button>
+          </div>
+          <div class="session-info" id="sessionInfo"><i class="fas fa-circle" style="font-size:7px"></i> No active session</div>
+        </div>
+        <div class="copilot-setting-group">
+          <label>Context (files &amp; folders)</label>
+          <div class="context-select">
+            <div style="display:flex;gap:6px;align-items:center;cursor:pointer;padding:7px 10px;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius-sm);transition:var(--transition)" id="contextToggle">
+              <i class="fas fa-folder-tree" style="color:var(--text-muted);font-size:12px"></i>
+              <span id="contextLabel" style="flex:1;font-size:12.5px;color:var(--text-secondary)">Select context...</span>
+              <i class="fas fa-chevron-down" style="color:var(--text-muted);font-size:10px"></i>
+            </div>
+            <div class="context-dropdown" id="contextDropdown"></div>
+          </div>
+        </div>
+      </div>
+      <div class="copilot-chat" id="copilotChat">
+        <div class="chat-msg system">Configure a provider and API key to start chatting with AI.</div>
+      </div>
+      <div class="copilot-input">
+        <textarea id="copilotInput" placeholder="Ask AI Copilot..." rows="1"></textarea>
+        <button class="send-btn" id="btnSendCopilot" disabled><i class="fas fa-paper-plane"></i></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Status Bar -->
+  <div class="status-bar">
+    <div class="left">
+      <span class="status-item" id="statusBranch"><i class="fas fa-code-branch"></i> main</span>
+      <span class="status-item" id="statusSync"><i class="fas fa-sync-alt"></i></span>
+      <span class="status-item" id="statusErrors"><i class="fas fa-times-circle"></i> 0 <i class="fas fa-exclamation-triangle"></i> 0</span>
+    </div>
+    <div class="right">
+      <span class="status-item" id="statusCursor">Ln 1, Col 1</span>
+      <span class="status-item" id="statusEncoding">UTF-8</span>
+      <span class="status-item" id="statusLang">JavaScript</span>
+      <span class="status-item" id="statusIndent">Spaces: 2</span>
+      <span class="status-item"><i class="fas fa-database"></i> IndexedDB</span>
+    </div>
+  </div>
+</div>
+
+<!-- Command Palette -->
+<div class="command-palette" id="commandPalette">
+  <div class="command-palette-card">
+    <input type="text" id="commandInput" placeholder="Type a command or search...">
+    <div class="command-list" id="commandList"></div>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal-card" id="modalCard"></div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- ========== JavaScript (load order matters!) ========== -->
+<!-- CodeMirror 5 Core -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+<!-- CodeMirror Modes -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/htmlmixed/htmlmixed.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/css/css.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/xml/xml.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/markdown/markdown.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/clike/clike.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/sql/sql.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/php/php.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/ruby/ruby.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/go/go.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/rust/rust.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/yaml/yaml.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/shell/shell.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/dockerfile/dockerfile.min.js"></script>
+<!-- CodeMirror Addons -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/search/search.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/search/searchcursor.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/search/jump-to-line.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/dialog/dialog.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/foldcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/foldgutter.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/brace-fold.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/indent-fold.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/comment-fold.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/show-hint.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/javascript-hint.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/html-hint.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/css-hint.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/anyword-hint.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closetag.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/selection/active-line.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/selection/mark-selection.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/comment/comment.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/display/placeholder.min.js"></script>
+<!-- JS Beautify -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.15.1/beautify.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.15.1/beautify-html.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.15.1/beautify-css.min.js"></script>
+<!-- Dexie (IndexedDB) -->
+<script src="https://unpkg.com/dexie@3.2.4/dist/dexie.js"></script>
+
+<!-- ========== App Modules (load order: no deps first) ========== -->
+<script src="./js/crypto.js"></script>
+<script src="./js/sandbox.js"></script>
+<script src="./js/copilot.js"></script>
+<script src="./js/tools.js"></script>
+<script src="./js/editor.js"></script>
+<script src="./js/ui.js"></script>
+<script src="./js/app.js"></script>
+</body>
+</html>
