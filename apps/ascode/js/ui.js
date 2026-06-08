@@ -4,6 +4,9 @@
  * FIX #3: All innerHTML with dynamic data uses escapeHtml
  * FIX #10: Bottom panel proper toggle
  * FIX #13: Removed dead contextmenu code
+ * FIX #15: Tree folder expand/collapse with proper node reference
+ * FIX #16: Add contextmenu to folders
+ * FIX #17: Add breadcrumb click navigation
  * Includes: Modal, Toast, Context Menu, Command Palette, Terminal, Sidebar rendering, Copilot panel
  */
 window.AS = window.AS || {};
@@ -13,6 +16,7 @@ AS.UI = (function() {
 
   var bottomPanelVisible = true;
   var bottomPanelHeight = 180;
+  var treeRefreshTimeout = null;
 
   function escapeHtml(str) {
     if (!str) return '';
@@ -233,7 +237,7 @@ AS.UI = (function() {
     }
   }
 
-  // ---- Sidebar Rendering (FIX #3: escaped file names) ----
+  // ---- Sidebar Rendering (FIX #3, #15, #16, #17: escaped file names, folder expand, context menu, breadcrumbs) ----
 
   function renderExplorer(container, fileTreeData) {
     container.innerHTML = '';
@@ -248,8 +252,18 @@ AS.UI = (function() {
           var isOpen = node.expanded;
           var folderName = node.name || node.path.split('/').pop() || 'workspace';
           div.innerHTML = '<span class="icon folder"><i class="fas fa-' + (isOpen ? 'folder-open' : 'folder') + '"></i></span><span>' + escapeHtml(folderName) + '</span>';
+          // FIX #15: Proper closure to capture node reference
           (function(n) {
-            div.addEventListener('click', function(e) { e.stopPropagation(); n.expanded = !n.expanded; AS.App.refreshTree(); });
+            div.addEventListener('click', function(e) {
+              e.stopPropagation();
+              n.expanded = !n.expanded;
+              // FIX #18: Debounce refresh to prevent rapid renders
+              if (treeRefreshTimeout) clearTimeout(treeRefreshTimeout);
+              treeRefreshTimeout = setTimeout(function() {
+                AS.App.refreshTree();
+              }, 50);
+            });
+            // FIX #16: Add contextmenu to folders too
             div.addEventListener('contextmenu', function(e) { showContextMenu(e, n); });
           })(node);
           container.appendChild(div);
