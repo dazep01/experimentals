@@ -5,9 +5,9 @@
  * FIX #7: Replace deprecated unescape/escape with TextEncoder/TextDecoder
  * 12 tools: Beautify, Minify, Template, JSON Format, Base64, Regex, Color, Diff, Lorem, Hash, Timestamp, UUID
  */
-window.VS = window.VS || {};
+window.AS = window.AS || {};
 
-VS.Tools = (function() {
+AS.Tools = (function() {
   'use strict';
 
   // ---- Shared helpers ----
