@@ -20,7 +20,7 @@ AS.Editor = (function() {
 
   // FIX #12: Debounce rebuildTree
   var rebuildTimer = null;
-  var REBUILD_DELAY = 80;
+  var REBUILD_DELAY = 0;
 
   function getEditor() { return editor; }
   function getCurrentFile() { return currentFile; }
@@ -94,7 +94,10 @@ AS.Editor = (function() {
     var map = new Map();
     for (var i = 0; i < records.length; i++) {
       var rec = records[i];
-      map.set(rec.path, Object.assign({}, rec, { children: [] }));
+      // Preserve expanded state from existing fileTreeData
+      var existingNode = findNodeByPath(fileTreeData, rec.path);
+      var expanded = existingNode ? existingNode.expanded : false;
+      map.set(rec.path, Object.assign({}, rec, { children: [], expanded: expanded }));
     }
     for (var j = 0; j < records.length; j++) {
       var r = records[j];
@@ -111,6 +114,18 @@ AS.Editor = (function() {
     if (map.has('/')) root.unshift(map.get('/'));
     fileTreeData = root;
     if (callback) callback();
+  }
+
+  function findNodeByPath(nodes, path) {
+    for (var i = 0; i < nodes.length; i++) {
+      var n = nodes[i];
+      if (n.path === path) return n;
+      if (n.children && n.children.length > 0) {
+        var found = findNodeByPath(n.children, path);
+        if (found) return found;
+      }
+    }
+    return null;
   }
 
   // ---- File Operations ----
@@ -414,7 +429,7 @@ AS.Editor = (function() {
     getEditor, getCurrentFile, getActiveTabPath, getOpenTabs, getFileTreeData,
     getCurrentPanel, setCurrentPanel,
     getFileIcon, getModeForExt, getLangName, escapeHtml,
-    rebuildTree, rebuildTreeImmediate,
+    rebuildTree, rebuildTreeImmediate, findNodeByPath,
     createFile, createFolder, saveCurrentContent, openFileByPath,
     closeTab, deleteItem, renameItem,
     addTabUI, highlightActiveTab, refreshTabsUI,
