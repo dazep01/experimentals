@@ -12,9 +12,9 @@
  * - Returns captured console.log output
  * - Full isolation from parent scope
  */
-window.VS = window.VS || {};
+window.AS = window.AS || {};
 
-VS.Sandbox = (function() {
+AS.Sandbox = (function() {
   'use strict';
 
   let iframe = null;
