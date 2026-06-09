@@ -499,6 +499,25 @@ AS.App = (function() {
   }
 
   function bindEvents() {
+    // Titlebar menu items
+    document.querySelectorAll('.titlebar-menu-item').forEach(function(el) {
+      el.addEventListener('click', function() {
+        var menu = el.dataset.menu;
+        AS.UI.toast('Menu "' + menu.charAt(0).toUpperCase() + menu.slice(1) + '" - Coming soon', 'info');
+      });
+    });
+
+    // Breadcrumbs click navigation
+    document.getElementById('breadcrumbs')?.addEventListener('click', function(e) {
+      if (e.target.tagName === 'SPAN' && e.target.dataset.path) {
+        var path = e.target.dataset.path;
+        AS.App.openFile(path).catch(function() {
+          // If it's a folder or doesn't exist, just update the tree view
+          AS.App.refreshTree();
+        });
+      }
+    });
+
     // Sidebar header buttons
     document.getElementById('btnNewFile')?.addEventListener('click', function() { showNewFileDialog(); });
     document.getElementById('btnNewFolder')?.addEventListener('click', function() { showNewFolderDialog(); });
