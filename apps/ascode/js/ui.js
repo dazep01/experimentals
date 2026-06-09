@@ -86,7 +86,7 @@ AS.UI = (function() {
       '<div class="ctx-item" data-action="cut"><i class="fas fa-cut"></i> Cut</div>' +
       '<div class="ctx-item" data-action="paste"><i class="fas fa-paste"></i> Paste</div>' +
       '<div class="ctx-sep"></div>' +
-      (isFile ? '<div class="ctx-item" data-action="rename"><i class="fas fa-pen"></i> Rename</div>' : '') +
+      '<div class="ctx-item" data-action="rename"><i class="fas fa-pen"></i> Rename</div>' +
       '<div class="ctx-item" data-action="delete" style="color:var(--accent-rose)"><i class="fas fa-trash"></i> Delete</div>';
     document.body.appendChild(menu);
     menu.style.left = Math.min(e.pageX, window.innerWidth - 200) + 'px';
@@ -106,6 +106,76 @@ AS.UI = (function() {
     });
     setTimeout(function() {
       var close = function(ev) { if (!menu.contains(ev.target)) { menu.remove(); document.removeEventListener('click', close); } };
+      document.addEventListener('click', close);
+    }, 50);
+  }
+
+  // ---- Floating Actions Menu ----
+
+  function showFloatingActionsMenu(node) {
+    var existing = document.querySelector('.floating-actions-menu');
+    if (existing) existing.remove();
+    
+    // Store selected node
+    AS.App.setSelectedNode(node);
+    
+    var menu = document.createElement('div');
+    menu.className = 'floating-actions-menu';
+    
+    var isFile = node.type === 'file';
+    var hasClipboard = AS.App.getClipboardState && AS.App.getClipboardState() !== null;
+    
+    menu.innerHTML =
+      '<div class="fa-header">Actions for "' + escapeHtml(node.name || node.path.split('/').pop()) + '"</div>' +
+      '<div class="fa-sep"></div>' +
+      '<div class="fa-item" data-action="open"><i class="fas fa-folder-open" style="color:var(--accent-sky)"></i> Open</div>' +
+      '<div class="fa-item" data-action="rename"><i class="fas fa-pen" style="color:var(--accent-mint)"></i> Rename</div>' +
+      '<div class="fa-item" data-action="copy"><i class="fas fa-copy" style="color:var(--accent-lavender)"></i> Copy</div>' +
+      '<div class="fa-item" data-action="cut"><i class="fas fa-cut" style="color:var(--accent-peach)"></i> Cut</div>' +
+      '<div class="fa-item' + (hasClipboard ? '' : ' disabled') + '" data-action="paste"><i class="fas fa-paste" style="color:var(--accent-grape)"></i> Paste</div>' +
+      '<div class="fa-sep"></div>' +
+      '<div class="fa-item" data-action="delete" style="color:var(--accent-rose)"><i class="fas fa-trash"></i> Delete</div>';
+    
+    document.body.appendChild(menu);
+    
+    // Position near the explorer actions button
+    var btn = document.getElementById('btnExplorerActions');
+    if (btn) {
+      var rect = btn.getBoundingClientRect();
+      menu.style.left = (rect.left - 180) + 'px';
+      menu.style.top = (rect.bottom + 5) + 'px';
+    }
+    
+    menu.querySelectorAll('.fa-item').forEach(function(item) {
+      item.addEventListener('click', async function() {
+        var action = item.dataset.action;
+        if (item.classList.contains('disabled')) return;
+        
+        if (action === 'open') {
+          if (isFile) AS.App.openFile(node.path);
+          else {
+            // Toggle folder expand
+            node.expanded = !node.expanded;
+            if (treeRefreshTimeout) clearTimeout(treeRefreshTimeout);
+            treeRefreshTimeout = setTimeout(function() { AS.App.refreshTree(); }, 50);
+          }
+        }
+        else if (action === 'rename') AS.App.renameItem(node.path);
+        else if (action === 'copy') AS.App.copyItem(node.path, node.type);
+        else if (action === 'cut') AS.App.cutItem(node.path, node.type);
+        else if (action === 'paste') AS.App.pasteItem(node.path);
+        else if (action === 'delete') AS.App.deleteItem(node.path, node.type);
+        menu.remove();
+      });
+    });
+    
+    setTimeout(function() {
+      var close = function(ev) { 
+        if (!menu.contains(ev.target) && ev.target.id !== 'btnExplorerActions') { 
+          menu.remove(); 
+          document.removeEventListener('click', close); 
+        } 
+      };
       document.addEventListener('click', close);
     }, 50);
   }
@@ -512,7 +582,7 @@ AS.UI = (function() {
   }
 
   return {
-    toast, showModal, closeModal, showContextMenu,
+    toast, showModal, closeModal, showContextMenu, showFloatingActionsMenu,
     openCommandPalette, closeCommandPalette, filterCommands, getCommands,
     terminalLog, processTerminalCommand,
     renderExplorer, renderSearch, renderGit, renderTools, renderSidebar,

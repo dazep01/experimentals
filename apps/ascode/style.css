@@ -457,6 +457,20 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
 .context-menu .ctx-item i { width: 16px; text-align: center; color: var(--text-muted); font-size: 12px; }
 .context-menu .ctx-sep { height: 1px; background: var(--border-light); margin: 4px 0; }
 
+/* ====== FLOATING ACTIONS MENU ====== */
+.floating-actions-menu {
+  position: fixed; background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-md); box-shadow: var(--shadow-lg); z-index: 3001;
+  padding: 4px 0; min-width: 200px; animation: ctxIn 0.15s ease;
+}
+.floating-actions-menu .fa-item { padding: 8px 16px; cursor: pointer; font-size: 12.5px; display: flex; align-items: center; gap: 10px; transition: var(--transition); color: var(--text-primary); }
+.floating-actions-menu .fa-item:hover { background: var(--bg-hover); color: var(--accent-grape); }
+.floating-actions-menu .fa-item i { width: 18px; text-align: center; font-size: 13px; }
+.floating-actions-menu .fa-item.disabled { opacity: 0.4; cursor: not-allowed; color: var(--text-muted); }
+.floating-actions-menu .fa-item.disabled:hover { background: transparent; color: var(--text-muted); }
+.floating-actions-menu .fa-sep { height: 1px; background: var(--border-light); margin: 4px 0; }
+.floating-actions-menu .fa-header { padding: 6px 16px; font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+
 /* ====== TOOLS PANEL ====== */
 .tools-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 4px 0; }
 .tool-card {
