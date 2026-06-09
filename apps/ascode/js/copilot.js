@@ -85,7 +85,7 @@ AS.Copilot = (function() {
     const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: { 'Authorization': 'Bearer ' + apiKey, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'qwen/qwen3-32b', messages: allMessages, temperature: 0.7, max_tokens: 4096 })
+      body: JSON.stringify({ model: 'groq/compound', messages: allMessages, temperature: 0.7, max_tokens: 4096 })
     });
     if (!res.ok) {
       const err = await res.json().catch(function() { return {}; });
