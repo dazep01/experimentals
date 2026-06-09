@@ -157,6 +157,7 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
   user-select: none;
 }
 .tree-item:hover { background: var(--bg-hover); }
+.tree-item.selected { background: rgba(152,120,208,0.2); border-left: 3px solid var(--accent-lavender); padding-left: 5px; }
 .tree-item.active-file { background: var(--bg-active); color: var(--accent-grape); font-weight: 500; }
 .tree-item .icon { width: 18px; text-align: center; font-size: 14px; flex-shrink: 0; pointer-events: none; }
 .tree-item .icon.js { color: #e8d060; }
