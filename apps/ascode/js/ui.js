@@ -77,9 +77,14 @@ AS.UI = (function() {
     menu.className = 'context-menu';
     var isFile = node.type === 'file';
     // FIX #3: All content is static HTML here (safe)
+    // FIX #20: Add copy/cut/paste actions to context menu
     menu.innerHTML =
       '<div class="ctx-item" data-action="newFile"><i class="fas fa-file-medical"></i> New File</div>' +
       '<div class="ctx-item" data-action="newFolder"><i class="fas fa-folder-plus"></i> New Folder</div>' +
+      '<div class="ctx-sep"></div>' +
+      '<div class="ctx-item" data-action="copy"><i class="fas fa-copy"></i> Copy</div>' +
+      '<div class="ctx-item" data-action="cut"><i class="fas fa-cut"></i> Cut</div>' +
+      '<div class="ctx-item" data-action="paste"><i class="fas fa-paste"></i> Paste</div>' +
       '<div class="ctx-sep"></div>' +
       (isFile ? '<div class="ctx-item" data-action="rename"><i class="fas fa-pen"></i> Rename</div>' : '') +
       '<div class="ctx-item" data-action="delete" style="color:var(--accent-rose)"><i class="fas fa-trash"></i> Delete</div>';
@@ -91,6 +96,9 @@ AS.UI = (function() {
         var action = item.dataset.action;
         if (action === 'newFile') AS.App.showNewFileDialog(node.path);
         else if (action === 'newFolder') AS.App.showNewFolderDialog(node.path);
+        else if (action === 'copy') AS.App.copyItem(node.path, node.type);
+        else if (action === 'cut') AS.App.cutItem(node.path, node.type);
+        else if (action === 'paste') AS.App.pasteItem(node.path);
         else if (action === 'rename') AS.App.renameItem(node.path);
         else if (action === 'delete') AS.App.deleteItem(node.path, node.type);
         menu.remove();
@@ -282,9 +290,15 @@ AS.UI = (function() {
       }
     }
     renderNodes(fileTreeData);
+    // FIX #19: Use DOM API instead of innerHTML += to prevent resetting event listeners
     var tree = AS.Editor.getFileTreeData();
-    if (tree.length === 0 || (tree.length === 1 && tree[0].path === '/')) {
-      container.innerHTML += '<div class="empty-state"><i class="fas fa-folder-open"></i><p>Create a file to get started</p></div>';
+    var onlyRoot = tree.length === 1 && tree[0].path === '/';
+    var rootHasChildren = onlyRoot && tree[0].children && tree[0].children.length > 0;
+    if (tree.length === 0 || (onlyRoot && !rootHasChildren)) {
+      var empty = document.createElement('div');
+      empty.className = 'empty-state';
+      empty.innerHTML = '<i class="fas fa-folder-open"></i><p>Create a file to get started</p>';
+      container.appendChild(empty);
     }
   }
 
