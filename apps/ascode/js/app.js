@@ -430,6 +430,96 @@ AS.App = (function() {
     }
   }
 
+  // Clipboard state for copy/cut/paste
+  var clipboardState = null; // { mode: 'copy' | 'cut', sourcePath: string, type: string }
+
+  async function copyItem(path, type) {
+    clipboardState = { mode: 'copy', sourcePath: path, type: type };
+    AS.UI.toast('Copied: ' + path.split('/').pop(), 'info');
+  }
+
+  async function cutItem(path, type) {
+    clipboardState = { mode: 'cut', sourcePath: path, type: type };
+    AS.UI.toast('Cut: ' + path.split('/').pop(), 'info');
+  }
+
+  async function pasteItem(targetPath) {
+    if (!clipboardState) {
+      AS.UI.toast('Nothing to paste', 'warning');
+      return;
+    }
+    try {
+      var sourcePath = clipboardState.sourcePath;
+      var sourceName = sourcePath.split('/').pop();
+      var targetDir = targetPath;
+      // If target is a file, paste into its parent directory
+      var targetItem = await db.files.get(targetPath);
+      if (targetItem && targetItem.type === 'file') {
+        targetDir = targetPath.substring(0, targetPath.lastIndexOf('/'));
+      }
+      
+      if (clipboardState.mode === 'copy') {
+        // Copy: duplicate the item with same name in target directory
+        var sourceItem = await db.files.get(sourcePath);
+        if (!sourceItem) {
+          AS.UI.toast('Source not found', 'error');
+          return;
+        }
+        var newPath = targetDir === '/' ? '/' + sourceName : targetDir + '/' + sourceName;
+        // Check if already exists
+        var existing = await db.files.get(newPath);
+        if (existing) {
+          AS.UI.toast('File/folder already exists at destination', 'error');
+          return;
+        }
+        await db.files.add({
+          path: newPath,
+          type: sourceItem.type,
+          content: sourceItem.content,
+          children: sourceItem.children,
+          lastModified: Date.now()
+        });
+        AS.UI.toast('Copied to ' + newPath, 'success');
+      } else if (clipboardState.mode === 'cut') {
+        // Cut: move the item to target directory
+        var sourceItem = await db.files.get(sourcePath);
+        if (!sourceItem) {
+          AS.UI.toast('Source not found', 'error');
+          return;
+        }
+        var newPath = targetDir === '/' ? '/' + sourceName : targetDir + '/' + sourceName;
+        // Check if already exists
+        var existing = await db.files.get(newPath);
+        if (existing) {
+          AS.UI.toast('File/folder already exists at destination', 'error');
+          return;
+        }
+        // Add new item
+        await db.files.add({
+          path: newPath,
+          type: sourceItem.type,
+          content: sourceItem.content,
+          children: sourceItem.children,
+          lastModified: Date.now()
+        });
+        // Delete old item (if moving, also need to delete children for folders)
+        if (sourceItem.type === 'folder') {
+          // Delete all children recursively
+          var children = await db.files.where('path').startsWith(sourcePath + '/').toArray();
+          for (var i = 0; i < children.length; i++) {
+            await db.files.delete(children[i].path);
+          }
+        }
+        await db.files.delete(sourcePath);
+        AS.UI.toast('Moved to ' + newPath, 'success');
+      }
+      clipboardState = null;
+      AS.UI.renderSidebar();
+    } catch (e) {
+      AS.UI.toast('Paste failed: ' + e.message, 'error');
+    }
+  }
+
   async function closeTab(path) {
     await AS.Editor.closeTab(db, path, function() { AS.UI.renderSidebar(); });
   }
@@ -685,7 +775,7 @@ AS.App = (function() {
     init, db, selectedContext,
     showNewFileDialog, showNewFolderDialog, showGitHubModal, showSettingsModal,
     executeTool, saveFile, openFile, createFile, createFolder,
-    deleteItem, renameItem, closeTab, refreshTree,
+    deleteItem, renameItem, copyItem, cutItem, pasteItem, closeTab, refreshTree,
     cloneRepo, commitAndPush, performSearch, performReplace,
     sendCopilotMessage, updateCopilotSession, updateContextDropdown
   };
