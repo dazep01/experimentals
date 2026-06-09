@@ -319,6 +319,25 @@ AS.UI = (function() {
 
   function renderExplorer(container, fileTreeData) {
     container.innerHTML = '';
+    
+    // Track selected node element for visual feedback
+    var selectedElement = null;
+    
+    function selectNode(element, node) {
+      // Remove previous selection
+      if (selectedElement) selectedElement.classList.remove('selected');
+      // Add selection to new element
+      if (element) {
+        element.classList.add('selected');
+        selectedElement = element;
+        AS.App.setSelectedNode(node);
+      }
+    }
+    
+    // Long press detection for mobile
+    var longPressTimer = null;
+    var longPressDuration = 500; // ms
+    
     function renderNodes(nodes, level) {
       level = level || 0;
       for (var i = 0; i < nodes.length; i++) {
@@ -331,29 +350,117 @@ AS.UI = (function() {
           var folderName = node.name || node.path.split('/').pop() || 'workspace';
           div.innerHTML = '<span class="icon folder"><i class="fas fa-' + (isOpen ? 'folder-open' : 'folder') + '"></i></span><span>' + escapeHtml(folderName) + '</span>';
           // FIX #15: Proper closure to capture node reference
-          (function(n) {
+          (function(n, el) {
+            // Click handler - select on single click, toggle expand on double click or after longpress
+            var clicked = false;
+            
             div.addEventListener('click', function(e) {
               e.stopPropagation();
+              // If was long press, don't trigger click
+              if (clicked) {
+                // Select the folder
+                selectNode(el, n);
+              }
+              clicked = false;
+            });
+            
+            // Double click to expand/collapse (desktop)
+            div.addEventListener('dblclick', function(e) {
+              e.stopPropagation();
               n.expanded = !n.expanded;
-              // FIX #18: Debounce refresh to prevent rapid renders
               if (treeRefreshTimeout) clearTimeout(treeRefreshTimeout);
               treeRefreshTimeout = setTimeout(function() {
                 AS.App.refreshTree();
               }, 50);
             });
-            // FIX #16: Add contextmenu to folders too
-            div.addEventListener('contextmenu', function(e) { showContextMenu(e, n); });
-          })(node);
+            
+            // Touch start for mobile long press
+            div.addEventListener('touchstart', function(e) {
+              clicked = true;
+              longPressTimer = setTimeout(function() {
+                clicked = false;
+                // Long press detected - show context menu
+                showContextMenu(e, n);
+              }, longPressDuration);
+            }, { passive: true });
+            
+            // Touch end - cancel long press if released early
+            div.addEventListener('touchend', function(e) {
+              if (longPressTimer) {
+                clearTimeout(longPressTimer);
+                longPressTimer = null;
+              }
+            });
+            
+            // Touch move - cancel long press if finger moves
+            div.addEventListener('touchmove', function(e) {
+              if (longPressTimer) {
+                clearTimeout(longPressTimer);
+                longPressTimer = null;
+              }
+            }, { passive: true });
+            
+            // Right-click context menu (desktop)
+            div.addEventListener('contextmenu', function(e) { 
+              e.preventDefault();
+              showContextMenu(e, n); 
+            });
+          })(node, div);
           container.appendChild(div);
           if (isOpen && node.children) renderNodes(node.children, level + 1);
         } else {
           var fi = AS.Editor.getFileIcon(node.name || node.path);
           var fileName = node.name || node.path.split('/').pop();
           div.innerHTML = '<span class="icon ' + escapeHtml(fi.cls) + '"><i class="' + escapeHtml(fi.icon) + '"></i></span><span>' + escapeHtml(fileName) + '</span>';
-          (function(n) {
-            div.addEventListener('click', function(e) { e.stopPropagation(); AS.App.openFile(n.path); });
-            div.addEventListener('contextmenu', function(e) { showContextMenu(e, n); });
-          })(node);
+          (function(n, el) {
+            var clicked = false;
+            
+            // Click to select
+            div.addEventListener('click', function(e) {
+              e.stopPropagation();
+              if (clicked) {
+                selectNode(el, n);
+              }
+              clicked = false;
+            });
+            
+            // Double click to open file (desktop)
+            div.addEventListener('dblclick', function(e) {
+              e.stopPropagation();
+              AS.App.openFile(n.path);
+            });
+            
+            // Touch start for mobile long press
+            div.addEventListener('touchstart', function(e) {
+              clicked = true;
+              longPressTimer = setTimeout(function() {
+                clicked = false;
+                showContextMenu(e, n);
+              }, longPressDuration);
+            }, { passive: true });
+            
+            // Touch end - cancel long press if released early
+            div.addEventListener('touchend', function(e) {
+              if (longPressTimer) {
+                clearTimeout(longPressTimer);
+                longPressTimer = null;
+              }
+            });
+            
+            // Touch move - cancel long press if finger moves
+            div.addEventListener('touchmove', function(e) {
+              if (longPressTimer) {
+                clearTimeout(longPressTimer);
+                longPressTimer = null;
+              }
+            }, { passive: true });
+            
+            // Right-click context menu (desktop)
+            div.addEventListener('contextmenu', function(e) { 
+              e.preventDefault();
+              showContextMenu(e, n); 
+            });
+          })(node, div);
           if (AS.Editor.getCurrentFile() === node.path) div.classList.add('active-file');
           container.appendChild(div);
         }
