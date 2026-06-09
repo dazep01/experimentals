@@ -130,7 +130,7 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
 
 /* ====== SIDEBAR ====== */
 .sidebar {
-  width: 260px; background: var(--bg-sidebar); border-right: 1px solid var(--border-light);
+  width: 170px; background: var(--bg-sidebar); border-right: 1px solid var(--border-light);
   display: flex; flex-direction: column; transition: width 0.25s ease; overflow: hidden;
   flex-shrink: 0; position: relative;
 }
