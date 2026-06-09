@@ -415,23 +415,57 @@ AS.App = (function() {
   }
 
   async function deleteItem(path, type) {
-    await AS.Editor.deleteItem(db, path, type, function() { AS.UI.renderSidebar(); });
-    AS.UI.toast('Deleted: ' + path.split('/').pop(), 'info');
+    var name = path.split('/').pop();
+    AS.UI.showModal(
+      '<i class="fas fa-trash" style="color:var(--accent-rose)"></i> Delete ' + (type === 'folder' ? 'Folder' : 'File'),
+      '<p style="font-size:13px;color:var(--text-secondary);margin-top:8px">Apakah kamu yakin ingin menghapus ' + (type === 'folder' ? 'folder' : 'file') + ' <strong>' + AS.UI.escapeHtml(name) + '</strong> secara permanen? Aksi tidak dapat dipulihkan ulang.</p>',
+      async function() {
+        await AS.Editor.deleteItem(db, path, type, function() { AS.UI.renderSidebar(); });
+        AS.UI.toast('Deleted: ' + name, 'info');
+        AS.UI.closeModal();
+      }
+    );
   }
 
   async function renameItem(path) {
-    var newName = prompt('New name:', path.split('/').pop());
-    if (!newName) return;
-    try {
-      await AS.Editor.renameItem(db, path, newName, function() { AS.UI.renderSidebar(); });
-      AS.UI.toast('Renamed to ' + newName, 'success');
-    } catch (e) {
-      AS.UI.toast(e.message, 'error');
-    }
+    var oldName = path.split('/').pop();
+    AS.UI.showModal(
+      '<i class="fas fa-pen" style="color:var(--accent-mint)"></i> Rename',
+      '<label style="font-size:12px;color:var(--text-muted);margin-bottom:4px;display:block">New name</label>' +
+      '<input type="text" id="renameInput" value="' + AS.UI.escapeHtml(oldName) + '" autofocus>',
+      function() {
+        var newName = document.getElementById('renameInput').value.trim();
+        if (!newName || newName === oldName) {
+          AS.UI.closeModal();
+          return;
+        }
+        AS.Editor.renameItem(db, path, newName, function() { AS.UI.renderSidebar(); })
+          .then(function() { AS.UI.toast('Renamed to ' + newName, 'success'); })
+          .catch(function(e) { AS.UI.toast(e.message, 'error'); });
+        AS.UI.closeModal();
+      }
+    );
+    setTimeout(function() { 
+      var input = document.getElementById('renameInput');
+      if (input) { input.focus(); input.select(); }
+    }, 100);
   }
 
-  // Clipboard state for copy/cut/paste
+  // State for selected node and clipboard
+  var selectedNode = null; // { path: string, type: string, name: string }
   var clipboardState = null; // { mode: 'copy' | 'cut', sourcePath: string, type: string }
+
+  function setSelectedNode(node) {
+    selectedNode = node;
+  }
+
+  function getSelectedNode() {
+    return selectedNode;
+  }
+
+  function getClipboardState() {
+    return clipboardState;
+  }
 
   async function copyItem(path, type) {
     clipboardState = { mode: 'copy', sourcePath: path, type: type };
@@ -612,6 +646,15 @@ AS.App = (function() {
     document.getElementById('btnNewFile')?.addEventListener('click', function() { showNewFileDialog(); });
     document.getElementById('btnNewFolder')?.addEventListener('click', function() { showNewFolderDialog(); });
     document.getElementById('btnRefresh')?.addEventListener('click', function() { refreshTree(); });
+    document.getElementById('btnExplorerActions')?.addEventListener('click', function(e) {
+      e.stopPropagation();
+      var selected = AS.App.getSelectedNode();
+      if (selected) {
+        AS.UI.showFloatingActionsMenu(selected);
+      } else {
+        AS.UI.toast('Select a file or folder first', 'warning');
+      }
+    });
 
     // Activity bar
     document.querySelectorAll('.activity-item').forEach(function(el) {
@@ -777,7 +820,8 @@ AS.App = (function() {
     executeTool, saveFile, openFile, createFile, createFolder,
     deleteItem, renameItem, copyItem, cutItem, pasteItem, closeTab, refreshTree,
     cloneRepo, commitAndPush, performSearch, performReplace,
-    sendCopilotMessage, updateCopilotSession, updateContextDropdown
+    sendCopilotMessage, updateCopilotSession, updateContextDropdown,
+    setSelectedNode, getSelectedNode, getClipboardState
   };
 })();
 
