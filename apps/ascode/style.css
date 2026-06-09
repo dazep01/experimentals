@@ -87,6 +87,7 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
 .titlebar-menu-item {
   padding: 3px 10px; border-radius: var(--radius-sm); cursor: pointer;
   color: var(--text-secondary); font-size: 12.5px; transition: var(--transition); position: relative;
+  user-select: none;
 }
 .titlebar-menu-item:hover { background: var(--bg-hover); color: var(--text-primary); }
 .titlebar-title { flex: 1; text-align: center; font-size: 12px; color: var(--text-muted); font-weight: 500; letter-spacing: 0.3px; }
@@ -94,6 +95,7 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
 .titlebar-btn {
   width: 30px; height: 22px; display: flex; align-items: center; justify-content: center;
   border-radius: var(--radius-sm); cursor: pointer; color: var(--text-secondary); transition: var(--transition); font-size: 11px;
+  user-select: none;
 }
 .titlebar-btn:hover { background: var(--bg-hover); }
 .titlebar-btn.close:hover { background: var(--accent-rose); color: white; }
@@ -111,6 +113,7 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
   width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
   font-size: 1.25rem; color: var(--text-muted); cursor: pointer; border-radius: var(--radius-md);
   transition: var(--transition); position: relative;
+  user-select: none;
 }
 .activity-item:hover { color: var(--accent-lavender); background: rgba(152,120,208,0.12); }
 .activity-item.active { color: var(--accent-lavender); background: rgba(152,120,208,0.15); }
@@ -151,10 +154,11 @@ input, textarea, select, button { font-family: inherit; font-size: inherit; }
   padding: 4px 8px; cursor: pointer; border-radius: var(--radius-sm); display: flex;
   align-items: center; gap: 8px; font-size: 13px; transition: var(--transition);
   color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  user-select: none;
 }
 .tree-item:hover { background: var(--bg-hover); }
 .tree-item.active-file { background: var(--bg-active); color: var(--accent-grape); font-weight: 500; }
-.tree-item .icon { width: 18px; text-align: center; font-size: 14px; flex-shrink: 0; }
+.tree-item .icon { width: 18px; text-align: center; font-size: 14px; flex-shrink: 0; pointer-events: none; }
 .tree-item .icon.js { color: #e8d060; }
 .tree-item .icon.ts { color: #68b0e0; }
 .tree-item .icon.html { color: #f08098; }
